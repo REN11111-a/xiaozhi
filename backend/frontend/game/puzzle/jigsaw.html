@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>拼图滑块 - 小智乐园</title>
+    <style>
+        * { box-sizing: border-box; user-select: none; }
+        body {
+            background: #E9F0E6;
+            font-family: 'Comic Neue', cursive;
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+            margin: 0;
+        }
+        .container {
+            background: white;
+            border-radius: 48px;
+            padding: 25px;
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+        }
+        .back-btn {
+            background: #E8A735;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 40px;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+        h2 { color: #5D4037; }
+        .puzzle-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 4px;
+            background-color: #deb887;
+            padding: 5px;
+            border-radius: 20px;
+            margin: 20px 0;
+            background: #c9a87b;
+        }
+        .tile {
+            aspect-ratio: 1;
+            background-size: 300% 300%;
+            cursor: pointer;
+            border-radius: 8px;
+            box-shadow: inset 0 0 0 1px rgba(255,255,200,0.6);
+        }
+        .empty {
+            background: #c9a87b !important;
+            box-shadow: none;
+            cursor: default;
+        }
+        .status {
+            font-size: 1.2rem;
+            margin: 15px;
+        }
+        .reset-btn {
+            background: #4CAF50;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 40px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <script src="/frontend/distance_check.js"></script>
+<div class="container">
+    <button class="back-btn" onclick="location.href='/game/puzzle'">← 返回拼图分类</button>
+    <h2>🧩 3x3 拼图滑块</h2>
+    <p>点击图块，与空白格交换，复原完整图片</p>
+    <div class="puzzle-grid" id="puzzleGrid"></div>
+    <div class="status" id="statusMsg">打乱中...</div>
+    <button class="reset-btn" id="resetBtn">🔀 重新打乱</button>
+</div>
+<script>
+    // 使用 Canvas 生成简单图片数据（颜色块），或者用数字标识
+    let tiles = []; // 存储每个位置的图片索引 0-8, 8为空缺
+    let emptyIndex = 8;
+    const size = 3;
+    const colors = ["#FFADAD","#FFD6A5","#FDFFB6","#CAFFBF","#9BF6FF","#A0C4FF","#BDB2FF","#FFC6FF","#F0F0F0"];
+
+    function initTiles() {
+        tiles = [0,1,2,3,4,5,6,7,8];
+        emptyIndex = 8;
+    }
+
+    function shuffleTiles() {
+        for(let step=0; step<200; step++) {
+            const neighbors = getNeighbors(emptyIndex);
+            if(neighbors.length>0) {
+                const randomNeighbor = neighbors[Math.floor(Math.random()*neighbors.length)];
+                swapTiles(emptyIndex, randomNeighbor);
+                emptyIndex = randomNeighbor;
+            }
+        }
+        renderGrid();
+    }
+
+    function getNeighbors(idx) {
+        const row = Math.floor(idx / size);
+        const col = idx % size;
+        const neighbors = [];
+        if(row>0) neighbors.push(idx - size);
+        if(row<size-1) neighbors.push(idx + size);
+        if(col>0) neighbors.push(idx - 1);
+        if(col<size-1) neighbors.push(idx + 1);
+        return neighbors;
+    }
+
+    function swapTiles(i,j) {
+        [tiles[i], tiles[j]] = [tiles[j], tiles[i]];
+    }
+
+    function isSolved() {
+        for(let i=0;i<8;i++) {
+            if(tiles[i] !== i) return false;
+        }
+        return true;
+    }
+
+    function renderGrid() {
+        const grid = document.getElementById('puzzleGrid');
+        grid.innerHTML = '';
+        for(let i=0;i<tiles.length;i++) {
+            const tile = document.createElement('div');
+            tile.className = 'tile';
+            if(tiles[i] === 8) {
+                tile.classList.add('empty');
+                tile.style.backgroundColor = "#c9a87b";
+            } else {
+                const color = colors[tiles[i]];
+                tile.style.backgroundColor = color;
+                tile.style.backgroundImage = `radial-gradient(circle at 30% 30%, rgba(255,255,255,0.6) 5%, transparent 70%)`;
+            }
+            tile.addEventListener('click', (function(idx) { return function() { moveTile(idx); }; })(i));
+            grid.appendChild(tile);
+        }
+        if(isSolved()) {
+            document.getElementById('statusMsg').innerHTML = "🎉 拼图完成！太厉害了！";
+            speakMessage("恭喜你复原了拼图！");
+        } else {
+            document.getElementById('statusMsg').innerHTML = "继续移动，复原图片";
+        }
+    }
+
+    function moveTile(idx) {
+        if(isSolved()) return;
+        const neighbors = getNeighbors(emptyIndex);
+        if(neighbors.includes(idx)) {
+            swapTiles(emptyIndex, idx);
+            emptyIndex = idx;
+            renderGrid();
+        } else {
+            speakMessage("只能移动与空白格相邻的图块");
+        }
+    }
+
+    function resetGame() {
+        initTiles();
+        shuffleTiles();
+        renderGrid();
+        speakMessage("拼图已打乱，试试复原它吧！");
+    }
+
+    function speakMessage(text) {
+        fetch('/api/speak',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text})}).catch(e=>console.log);
+    }
+
+    document.getElementById('resetBtn').addEventListener('click', resetGame);
+    initTiles();
+    shuffleTiles();
+    renderGrid();
+    speakMessage("点击图块，移动到空白格，拼出完整图片！");
+</script>
+<script src="/frontend/rest_check.js"></script>
+</body>
+</html>

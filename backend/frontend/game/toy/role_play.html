@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>小小医生 - 小智乐园</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            background: #FFF0DB;
+            font-family: 'Comic Neue', cursive;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            margin: 0;
+        }
+        .container {
+            background: white;
+            border-radius: 48px;
+            padding: 25px;
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+        }
+        .back-btn {
+            background: #E8A735;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 40px;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+        h2 { color: #5D4037; }
+        .patient {
+            background: #F9E6CF;
+            border-radius: 50px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .patient-emoji {
+            font-size: 90px;
+            transition: 0.1s;
+        }
+        .symptoms {
+            font-size: 1.2rem;
+            margin: 15px 0;
+            color: #E67E22;
+            font-weight: bold;
+        }
+        .tools {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 12px;
+            margin: 20px 0;
+        }
+        .tool {
+            background: #E8A735;
+            border-radius: 40px;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.1s;
+        }
+        .tool:hover { background: #d18e1f; transform: scale(1.02); }
+        .message {
+            background: #FFF9E8;
+            border-radius: 30px;
+            padding: 15px;
+            margin-top: 20px;
+            font-size: 0.95rem;
+        }
+        .next-btn {
+            background: #4CAF50;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 40px;
+            cursor: pointer;
+            margin-top: 15px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <script src="/frontend/distance_check.js"></script>
+<div class="container">
+    <button class="back-btn" onclick="location.href='/game/toy'">← 返回玩具工坊</button>
+    <h2>🏥 小小医生</h2>
+    <div class="patient">
+        <div class="patient-emoji" id="patientEmoji">🐻‍❄️</div>
+        <div class="symptoms" id="symptomText">小北极熊说：我肚子疼...</div>
+    </div>
+    <div class="tools" id="toolsContainer"></div>
+    <div class="message" id="msgArea">选择正确的医疗工具来帮助它！</div>
+    <button class="next-btn" id="nextBtn" style="display: none;">👨‍⚕️ 下一位病人</button>
+</div>
+<script>
+    // 病人数据（可无限扩展）
+    const patients = [
+        { emoji: "🐻‍❄️", symptom: "肚子疼", cure: "stomach", correctTool: "💊 吃药", wrongMsg: "肚子疼需要吃药或休息" },
+        { emoji: "🐱", symptom: "爪子受伤了", cure: "bandage", correctTool: "🩹 创可贴", wrongMsg: "受伤需要包扎" },
+        { emoji: "🐶", symptom: "发烧了", cure: "thermometer", correctTool: "🌡️ 量体温", wrongMsg: "发烧要先量体温" },
+        { emoji: "🐰", symptom: "很疲惫", cure: "rest", correctTool: "🛌 休息", wrongMsg: "疲惫需要休息" },
+        { emoji: "🦊", symptom: "牙齿疼", cure: "tooth", correctTool: "🦷 看牙", wrongMsg: "牙疼需要看牙医" },
+        { emoji: "🐸", symptom: "眼睛不舒服", cure: "eye", correctTool: "👓 检查眼睛", wrongMsg: "眼睛问题要检查" },
+        { emoji: "🐧", symptom: "感冒流鼻涕", cure: "cold", correctTool: "💊 感冒药", wrongMsg: "感冒需要吃药多休息" },
+        { emoji: "🦉", symptom: "翅膀受伤了", cure: "wing", correctTool: "🩹 包扎", wrongMsg: "翅膀受伤需要包扎" }
+    ];
+
+    // 医疗工具库
+    const tools = [
+        { id: "stomach", name: "💊 吃药", display: "💊 吃药" },
+        { id: "bandage", name: "🩹 创可贴", display: "🩹 创可贴" },
+        { id: "thermometer", name: "🌡️ 量体温", display: "🌡️ 量体温" },
+        { id: "rest", name: "🛌 休息", display: "🛌 休息" },
+        { id: "tooth", name: "🦷 看牙", display: "🦷 看牙" },
+        { id: "eye", name: "👓 检查眼睛", display: "👓 检查眼睛" },
+        { id: "cold", name: "💊 感冒药", display: "💊 感冒药" },
+        { id: "wing", name: "🩹 包扎", display: "🩹 包扎" }
+    ];
+
+    let currentPatientIndex = 0;
+    let cured = false;
+    let currentPatient = null;
+
+    function loadPatient(index) {
+        currentPatient = patients[index % patients.length];
+        cured = false;
+        document.getElementById('patientEmoji').innerHTML = currentPatient.emoji;
+        document.getElementById('symptomText').innerHTML = `${currentPatient.emoji}说：${currentPatient.symptom}...`;
+        document.getElementById('msgArea').innerHTML = "选择正确的医疗工具来帮助它！";
+        document.getElementById('nextBtn').style.display = 'none';
+        renderTools();
+        speakMessage(`小动物${currentPatient.symptom}，请选择合适的治疗。`);
+    }
+
+    function renderTools() {
+        const container = document.getElementById('toolsContainer');
+        container.innerHTML = '';
+        tools.forEach(tool => {
+            const btn = document.createElement('div');
+            btn.className = 'tool';
+            btn.innerHTML = tool.display;
+            btn.addEventListener('click', () => treat(tool.id));
+            container.appendChild(btn);
+        });
+    }
+
+    function treat(toolId) {
+        if (cured) {
+            document.getElementById('msgArea').innerHTML = "病人已经康复啦！点击“下一位病人”继续。";
+            return;
+        }
+        if (toolId === currentPatient.cure) {
+            cured = true;
+            document.getElementById('msgArea').innerHTML = `✅ 治疗成功！${currentPatient.emoji} 康复了！🎉`;
+            speakMessage("治疗成功！你真是一个好医生！");
+            document.getElementById('nextBtn').style.display = 'block';
+        } else {
+            const wrongMsg = currentPatient.wrongMsg || "这个工具不对，再试试别的。";
+            document.getElementById('msgArea').innerHTML = `❌ ${wrongMsg}，再试试别的工具。`;
+            speakMessage(wrongMsg);
+        }
+    }
+
+    function nextPatient() {
+        currentPatientIndex++;
+        loadPatient(currentPatientIndex);
+    }
+
+    function speakMessage(text) {
+        fetch('/api/speak', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: text })
+        }).catch(e => console.log);
+    }
+
+    document.getElementById('nextBtn').addEventListener('click', nextPatient);
+    loadPatient(0);
+</script>
+<script src="/frontend/rest_check.js"></script>
+</body>
+</html>

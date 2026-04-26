@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>动物知识问答 - 小智乐园</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            background: #D9EAD3;
+            font-family: 'Comic Neue', cursive;
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+            margin: 0;
+        }
+        .container {
+            background: white;
+            border-radius: 48px;
+            padding: 30px;
+            max-width: 700px;
+            width: 100%;
+            text-align: center;
+        }
+        .back-btn {
+            background: #E8A735;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 40px;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+        h2 { color: #5D4037; }
+        .question-box {
+            background: #F9F2E0;
+            border-radius: 30px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .options {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .option {
+            background: #E8A735;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: 0.1s;
+            font-weight: bold;
+        }
+        .option:hover { background: #d18e1f; }
+        .next-btn {
+            background: #4CAF50;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 40px;
+            font-size: 1rem;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+        .score {
+            font-size: 1.2rem;
+            background: #FFD966;
+            display: inline-block;
+            padding: 5px 20px;
+            border-radius: 40px;
+            margin: 15px 0;
+        }
+        .feedback {
+            margin-top: 15px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <script src="/frontend/distance_check.js"></script>
+<div class="container">
+    <button class="back-btn" onclick="location.href='/game/science'">← 返回科学分类</button>
+    <h2>🐘 动物知识问答</h2>
+    <div class="score">得分: <span id="scoreVal">0</span></div>
+    <div id="quizArea"></div>
+</div>
+<script>
+    const questions = [
+        { text: "哪种动物被称为‘沙漠之舟’？", options: ["骆驼", "鸵鸟", "袋鼠", "蝎子"], correct: 0 },
+        { text: "下列哪种动物是哺乳动物？", options: ["企鹅", "鳄鱼", "鲸鱼", "青蛙"], correct: 2 },
+        { text: "熊猫最爱吃什么？", options: ["竹子", "树叶", "鱼", "蜂蜜"], correct: 0 },
+        { text: "世界上最大的动物是什么？", options: ["大象", "蓝鲸", "长颈鹿", "鲸鲨"], correct: 1 },
+        { text: "哪种鸟不会飞？", options: ["麻雀", "鸽子", "企鹅", "鹰"], correct: 2 }
+    ];
+    let current = 0, score = 0, answered = false;
+
+    function renderQuestion() {
+        if(current >= questions.length) {
+            document.getElementById('quizArea').innerHTML = `<div class="question-box">🎉 恭喜你完成了所有题目！ 最终得分: ${score}/${questions.length}</div>`;
+            speakMessage(`你答对了${score}道题，真棒！`);
+            return;
+        }
+        const q = questions[current];
+        let html = `<div class="question-box"><strong>${current+1}. ${q.text}</strong><div class="options">`;
+        q.options.forEach((opt, idx) => {
+            html += `<div class="option" data-opt="${idx}">${String.fromCharCode(65+idx)}. ${opt}</div>`;
+        });
+        html += `</div></div><button class="next-btn" id="nextBtn" style="display:none;">下一题</button>`;
+        document.getElementById('quizArea').innerHTML = html;
+        document.querySelectorAll('.option').forEach(opt => {
+            opt.addEventListener('click', (e) => {
+                if(answered) return;
+                const selected = parseInt(opt.dataset.opt);
+                if(selected === q.correct) {
+                    score++;
+                    document.getElementById('scoreVal').innerText = score;
+                    speakMessage("答对了！好厉害！");
+                    opt.style.background = "#4CAF50";
+                } else {
+                    speakMessage(`答错了，正确答案是${String.fromCharCode(65+q.correct)}. ${q.options[q.correct]}`);
+                    opt.style.background = "#F44336";
+                    // 高亮正确答案
+                    document.querySelectorAll('.option').forEach(o => {
+                        if(parseInt(o.dataset.opt) === q.correct) o.style.background = "#4CAF50";
+                    });
+                }
+                answered = true;
+                document.getElementById('nextBtn').style.display = 'block';
+                document.querySelectorAll('.option').forEach(o => o.style.pointerEvents = 'none');
+            });
+        });
+        document.getElementById('nextBtn')?.addEventListener('click', () => {
+            current++;
+            answered = false;
+            renderQuestion();
+        });
+    }
+
+    function speakMessage(text) {
+        fetch('/api/speak',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text})}).catch(e=>console.log);
+    }
+    renderQuestion();
+    speakMessage("动物知识问答开始啦，每答对一题得一分！");
+</script>
+<script src="/frontend/rest_check.js"></script>
+</body>
+</html>

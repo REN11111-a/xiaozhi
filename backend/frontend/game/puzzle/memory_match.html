@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>记忆配对 - 小智乐园</title>
+    <style>
+        * { box-sizing: border-box; user-select: none; }
+        body {
+            background: #E9F0E6;
+            font-family: 'Comic Neue', 'Segoe UI', cursive, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            margin: 0;
+        }
+        .game-container {
+            background: white;
+            border-radius: 48px;
+            padding: 25px;
+            max-width: 700px;
+            width: 100%;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .back-btn {
+            background: #E8A735;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 40px;
+            font-weight: bold;
+            cursor: pointer;
+            font-family: inherit;
+            margin-bottom: 20px;
+            display: inline-block;
+        }
+        h2 { color: #5D4037; margin: 10px 0; }
+        .status {
+            font-size: 1.2rem;
+            background: #F9E6CF;
+            display: inline-block;
+            padding: 5px 20px;
+            border-radius: 40px;
+            margin: 15px 0;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin: 20px 0;
+        }
+        .card {
+            aspect-ratio: 1;
+            background: #E8A735;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.2rem;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 6px 0 #b97f10;
+            color: white;
+        }
+        .card.flipped, .card.matched {
+            background: #A5D6A7;
+            color: #333;
+            box-shadow: none;
+            transform: translateY(2px);
+        }
+        .card.matched {
+            opacity: 0.6;
+            cursor: default;
+        }
+        .reset-btn {
+            background: #4CAF50;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 40px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            font-family: inherit;
+            margin-top: 10px;
+        }
+        @media (max-width: 500px) {
+            .grid { gap: 8px; }
+            .card { font-size: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <script src="/frontend/distance_check.js"></script>
+<div class="game-container">
+    <button class="back-btn" onclick="location.href='/game/puzzle'">← 返回拼图分类</button>
+    <h2>🃏 记忆配对</h2>
+    <p>点击卡片，找到相同的表情！</p>
+    <div class="status" id="statusMsg">配对: 0 / 8</div>
+    <div class="grid" id="gameGrid"></div>
+    <button class="reset-btn" id="resetBtn">🔄 新的一局</button>
+</div>
+<script>
+    const emojis = ['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼'];
+    let cards = [...emojis, ...emojis];
+    let shuffled = [];
+    let flippedIndexes = [];
+    let matched = new Array(16).fill(false);
+    let lockBoard = false;
+    let matchCount = 0;
+
+    function shuffleArray(arr) {
+        for(let i=arr.length-1;i>0;i--) {
+            const j = Math.floor(Math.random()*(i+1));
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+    }
+
+    function initGame() {
+        shuffled = shuffleArray([...cards]);
+        flippedIndexes = [];
+        matched.fill(false);
+        lockBoard = false;
+        matchCount = 0;
+        document.getElementById('statusMsg').innerText = `配对: 0 / 8`;
+        renderGrid();
+    }
+
+    function renderGrid() {
+        const grid = document.getElementById('gameGrid');
+        grid.innerHTML = '';
+        for(let i=0;i<shuffled.length;i++) {
+            const card = document.createElement('div');
+            card.className = 'card';
+            if(matched[i]) {
+                card.classList.add('matched');
+                card.innerText = shuffled[i];
+            } else if(flippedIndexes.includes(i)) {
+                card.classList.add('flipped');
+                card.innerText = shuffled[i];
+            } else {
+                card.innerText = '?';
+            }
+            card.addEventListener('click', () => flipCard(i));
+            grid.appendChild(card);
+        }
+    }
+
+    function flipCard(idx) {
+        if(lockBoard) return;
+        if(matched[idx]) return;
+        if(flippedIndexes.includes(idx)) return;
+        flippedIndexes.push(idx);
+        if(flippedIndexes.length === 2) {
+            lockBoard = true;
+            const [a,b] = flippedIndexes;
+            if(shuffled[a] === shuffled[b]) {
+                matched[a]=matched[b]=true;
+                matchCount++;
+                document.getElementById('statusMsg').innerText = `配对: ${matchCount} / 8`;
+                flippedIndexes = [];
+                lockBoard = false;
+                if(matchCount===8) {
+                    setTimeout(() => {
+                        alert('🎉 恭喜！全部配对成功！');
+                        speakMessage("太厉害了！你完成了所有配对！");
+                    }, 100);
+                }
+                renderGrid();
+            } else {
+                setTimeout(() => {
+                    flippedIndexes = [];
+                    renderGrid();
+                    lockBoard = false;
+                }, 800);
+                renderGrid();
+            }
+        } else {
+            renderGrid();
+        }
+    }
+
+    // 语音
+    function speakMessage(text) {
+        fetch('/api/speak', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: text })
+        }).catch(e => console.log);
+    }
+
+    document.getElementById('resetBtn').addEventListener('click', () => {
+        initGame();
+        speakMessage("新的一局，开始记忆挑战吧！");
+    });
+
+    initGame();
+    speakMessage("记忆配对游戏开始啦，找出相同的表情吧！");
+</script>
+<script src="/frontend/rest_check.js"></script>
+</body>
+</html>

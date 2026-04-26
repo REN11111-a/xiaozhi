@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>算术大挑战 - 自选运算与范围 | 小智乐园</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none; /* 避免移动端长按菜单，不影响输入 */
+        }
+
+        body {
+            background: #F0F0E8;
+            font-family: 'Comic Neue', 'Segoe UI', 'Comic Neue', cursive, system-ui, -apple-system;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 750px;
+            width: 100%;
+            background: white;
+            border-radius: 56px;
+            padding: 24px 28px 36px;
+            text-align: center;
+            box-shadow: 0 20px 35px rgba(0, 0, 0, 0.1);
+            transition: all 0.2s;
+        }
+
+        .back-btn {
+            background: #E8A735;
+            border: none;
+            padding: 8px 24px;
+            border-radius: 40px;
+            cursor: pointer;
+            margin-bottom: 20px;
+            font-weight: bold;
+            font-size: 1rem;
+            font-family: inherit;
+            transition: 0.2s;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+
+        .back-btn:active { transform: scale(0.96); background: #d1941e; }
+
+        h2 {
+            margin: 8px 0 0;
+            font-size: 1.9rem;
+            color: #4b3b2b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .subhead {
+            color: #7f6b4a;
+            margin-top: 5px;
+            font-size: 0.95rem;
+        }
+
+        .score-board {
+            font-size: 1.5rem;
+            background: #FFF2E6;
+            display: inline-block;
+            padding: 8px 28px;
+            border-radius: 60px;
+            margin: 12px 0 18px;
+            font-weight: bold;
+            box-shadow: inset 0 1px 3px #0001, 0 4px 8px #0001;
+        }
+
+        /* 设置面板 */
+        .settings-panel {
+            background: #fef5e8;
+            border-radius: 48px;
+            padding: 16px 20px;
+            margin: 10px 0 20px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        .setting-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: white;
+            padding: 5px 16px;
+            border-radius: 50px;
+            box-shadow: 0 1px 4px #ddd;
+        }
+
+        .setting-group label {
+            font-weight: bold;
+            color: #b45f2b;
+        }
+
+        select, .setting-group input {
+            font-size: 1rem;
+            padding: 8px 12px;
+            border-radius: 40px;
+            border: 1px solid #e0c8a8;
+            background: white;
+            font-family: inherit;
+            font-weight: bold;
+            text-align: center;
+            cursor: pointer;
+            outline: none;
+        }
+
+        .setting-group input {
+            width: 85px;
+        }
+
+        .reset-btn {
+            background: #F4A261;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 40px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            cursor: pointer;
+            font-family: inherit;
+            transition: 0.2s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .reset-btn:active { transform: scale(0.96); background: #e98a3a; }
+
+        .question-area {
+            background: #F9F3E3;
+            padding: 30px 20px;
+            border-radius: 60px;
+            margin: 16px 0;
+            box-shadow: inset 0 1px 5px #fff8, 0 8px 18px rgba(0, 0, 0, 0.05);
+        }
+
+        .math-question {
+            font-size: 3.3rem;
+            font-weight: bold;
+            margin: 20px 0;
+            color: #2c3e2f;
+            letter-spacing: 4px;
+            word-break: break-word;
+        }
+
+        .answer-input {
+            font-size: 2rem;
+            padding: 12px 20px;
+            width: 220px;
+            text-align: center;
+            border: 3px solid #E8A735;
+            border-radius: 60px;
+            font-family: monospace;
+            font-weight: bold;
+            background: white;
+            transition: 0.1s;
+        }
+
+        .answer-input:disabled {
+            background: #f5f0e6;
+            border-color: #c0b28a;
+            color: #8b7a5c;
+            cursor: not-allowed;
+        }
+
+        .answer-input:focus {
+            border-color: #f5b042;
+            outline: none;
+            box-shadow: 0 0 0 3px #fae6c3;
+        }
+
+        .submit-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 34px;
+            border-radius: 60px;
+            font-size: 1.3rem;
+            margin: 20px 0 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-family: inherit;
+            transition: 0.1s;
+            box-shadow: 0 5px 0 #2c6e2f;
+        }
+
+        .submit-btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 #2c6e2f;
+        }
+
+        .feedback {
+            font-size: 1.2rem;
+            margin: 15px 0 5px;
+            min-height: 70px;
+            font-weight: 500;
+            background: #fff6e8;
+            border-radius: 40px;
+            padding: 12px;
+            color: #5a4a32;
+        }
+
+        @media (max-width: 600px) {
+            .container { padding: 18px; }
+            .math-question { font-size: 2.3rem; }
+            .answer-input { width: 160px; font-size: 1.6rem; padding: 8px 12px; }
+            .settings-panel { gap: 12px; }
+            .setting-group { padding: 3px 12px; }
+            .setting-group input { width: 70px; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <button class="back-btn" onclick="location.href='/game/math_quiz'">← 返回数学探险岛</button>
+    <h2>🧮 算术大挑战</h2>
+    <p class="subhead">✨ 自选运算 & 数字范围 ✨</p>
+    <div class="score-board">🏆 得分: <span id="score">0</span></div>
+
+    <!-- 自主选择运算 + 数值范围 -->
+    <div class="settings-panel">
+        <div class="setting-group">
+            <label>⚡ 运算</label>
+            <select id="operationSelect">
+                <option value="add">加法 +</option>
+                <option value="sub">减法 -</option>
+                <option value="mul">乘法 ×</option>
+                <option value="div">除法 ÷</option>
+            </select>
+        </div>
+        <div class="setting-group">
+            <label>📊 范围</label>
+            <input type="number" id="minRange" value="1" min="0" max="200" step="1">
+            <span>～</span>
+            <input type="number" id="maxRange" value="20" min="1" max="300" step="1">
+        </div>
+        <button id="resetGameBtn" class="reset-btn">🔄 新对局</button>
+    </div>
+
+    <div class="question-area">
+        <div class="math-question" id="question">12 + 7 = ?</div>
+        <input type="number" id="answer" class="answer-input" placeholder="?" inputmode="numeric">
+        <div><button class="submit-btn" id="submitBtn">✓ 作答</button></div>
+        <div class="feedback" id="feedback"></div>
+    </div>
+</div>
+<script src="/frontend/distance_check.js"></script>
+<script>
+    // ---------- 游戏核心变量 ----------
+    let currentQuestion = { text: "", answer: 0 };
+    let score = 0;
+    let waitingForNext = false;       // 是否处于答错等待“下一题”状态
+    const scoreSpan = document.getElementById('score');
+    const questionDiv = document.getElementById('question');
+    const answerInput = document.getElementById('answer');
+    const feedbackDiv = document.getElementById('feedback');
+    const submitBtn = document.getElementById('submitBtn');
+
+    // 当前选中的运算和范围
+    let currentOp = "add";      // 'add', 'sub', 'mul', 'div'
+    let minVal = 1;
+    let maxVal = 20;
+
+    // DOM 元素
+    const operationSelect = document.getElementById('operationSelect');
+    const minRangeInput = document.getElementById('minRange');
+    const maxRangeInput = document.getElementById('maxRange');
+    const resetBtn = document.getElementById('resetGameBtn');
+
+    // ---------- 辅助函数（语音，保留原功能）----------
+    function speakMessage(text) {
+        fetch('/api/speak', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text })
+        }).catch(e => console.log("语音通知(非必需):", e));
+    }
+
+    // ---------- 题目生成器（根据运算 + 范围）----------
+    function generateAddition(minV, maxV) {
+        let low = Math.min(minV, maxV);
+        let high = Math.max(minV, maxV);
+        if (low === high && low === 0) low = 0, high = 5;
+        let a = Math.floor(Math.random() * (high - low + 1)) + low;
+        let b = Math.floor(Math.random() * (high - low + 1)) + low;
+        return { text: `${a} + ${b}`, answer: a + b };
+    }
+
+    function generateSubtraction(minV, maxV) {
+        let low = Math.min(minV, maxV);
+        let high = Math.max(minV, maxV);
+        if (low === high && low === 0) { low = 0; high = 10; }
+        let a = Math.floor(Math.random() * (high - low + 1)) + low;
+        let b = Math.floor(Math.random() * (high - low + 1)) + low;
+        if (a < b) {
+            [a, b] = [b, a];
+        }
+        return { text: `${a} - ${b}`, answer: a - b };
+    }
+
+    function generateMultiplication(minV, maxV) {
+        let low = Math.min(minV, maxV);
+        let high = Math.max(minV, maxV);
+        if (low === 0 && high === 0) { low = 1; high = 9; }
+        let a = Math.floor(Math.random() * (high - low + 1)) + low;
+        let b = Math.floor(Math.random() * (high - low + 1)) + low;
+        return { text: `${a} × ${b}`, answer: a * b };
+    }
+
+    function generateDivision(minV, maxV) {
+        let low = Math.min(minV, maxV);
+        let high = Math.max(minV, maxV);
+        let divisorMin = (low === 0) ? 1 : low;
+        let divisorMax = high;
+        if (divisorMin > divisorMax) {
+            divisorMin = 1;
+            divisorMax = 10;
+        }
+        if (divisorMax < 1) divisorMax = 10;
+        
+        for (let attempt = 0; attempt < 45; attempt++) {
+            let divisor = Math.floor(Math.random() * (divisorMax - divisorMin + 1)) + divisorMin;
+            if (divisor === 0) continue;
+            let minMultiple = Math.ceil(low / divisor);
+            let maxMultiple = Math.floor(high / divisor);
+            if (low <= 0 && minMultiple > 0) {
+                if (0 >= minMultiple && 0 <= maxMultiple) {
+                    let dividend = 0;
+                    if (dividend >= low && dividend <= high) {
+                        return { text: `${dividend} ÷ ${divisor}`, answer: 0 };
+                    }
+                }
+            }
+            if (minMultiple <= maxMultiple && maxMultiple >= 0) {
+                let multiple = Math.floor(Math.random() * (maxMultiple - minMultiple + 1)) + minMultiple;
+                let dividend = divisor * multiple;
+                if (dividend >= low && dividend <= high && dividend >= 0) {
+                    return { text: `${dividend} ÷ ${divisor}`, answer: multiple };
+                }
+            }
+        }
+        let safeDividend = 4, safeDivisor = 2;
+        if (low <= 4 && high >= 4 && low <= 2 && high >= 2) {
+            return { text: `${safeDividend} ÷ ${safeDivisor}`, answer: 2 };
+        }
+        for (let d = divisorMin; d <= divisorMax; d++) {
+            if (d === 0) continue;
+            for (let times = 1; times <= 20; times++) {
+                let candidate = d * times;
+                if (candidate >= low && candidate <= high) {
+                    return { text: `${candidate} ÷ ${d}`, answer: times };
+                }
+            }
+        }
+        return { text: `8 ÷ 2`, answer: 4 };
+    }
+
+    function generateQuestionBySettings() {
+        let realMin = Math.min(minVal, maxVal);
+        let realMax = Math.max(minVal, maxVal);
+        if (realMin === realMax) {
+            if (realMin === 0) realMax = 5;
+            else realMax = realMin + 2;
+        }
+        if (realMax - realMin < 1) {
+            realMax = realMin + 3;
+        }
+        switch (currentOp) {
+            case "add": return generateAddition(realMin, realMax);
+            case "sub": return generateSubtraction(realMin, realMax);
+            case "mul": return generateMultiplication(realMin, realMax);
+            case "div": return generateDivision(realMin, realMax);
+            default: return generateAddition(1, 20);
+        }
+    }
+
+    // ---------- 重置UI到可答题状态 (不清除分数，不生成题目，仅重置交互状态) ----------
+    function resetInteractiveState() {
+        waitingForNext = false;
+        answerInput.disabled = false;
+        submitBtn.innerText = "✓ 作答";
+        // 不清空 feedback，由调用方决定
+    }
+
+    // ---------- 刷新题目（生成新题，重置所有交互状态，可选择性保留或重置反馈）----------
+    function refreshQuestion(resetFeedbackMsg = true) {
+        // 生成新题目
+        currentQuestion = generateQuestionBySettings();
+        let displayText = currentQuestion.text;
+        questionDiv.innerText = displayText + " = ?";
+        
+        // 重置交互状态（解除禁用、按钮文字、等待标志）
+        resetInteractiveState();
+        
+        // 清空输入框
+        answerInput.value = '';
+        
+        // 处理反馈消息
+        if (resetFeedbackMsg) {
+            feedbackDiv.innerHTML = "✨ 新题目，来试试看！ ✨";
+        }
+        // 聚焦输入框
+        answerInput.focus();
+    }
+
+    // ---------- 更新分数UI ----------
+    function updateScoreUI() {
+        scoreSpan.innerText = score;
+    }
+
+    // ---------- 重置整个游戏（得分归零 + 刷新题目 + 自定义欢迎消息）----------
+    function resetGame() {
+        // 重置等待状态和按钮、输入框
+        resetInteractiveState();
+        // 重置分数
+        score = 0;
+        updateScoreUI();
+        // 刷新题目 (会重新生成并清空反馈消息，但后面我们会覆盖成更友好的重置提示)
+        refreshQuestion(true);
+        // 设置专属重置提示
+        feedbackDiv.innerHTML = "🎯 新对局！按照新规则答题吧！加油～ 🎯";
+        speakMessage(`游戏已重置，当前模式是${getOpChinese()}，范围${minVal}到${maxVal}`);
+        answerInput.focus();
+    }
+
+    function getOpChinese() {
+        const map = { add: "加法", sub: "减法", mul: "乘法", div: "除法" };
+        return map[currentOp] || "算术";
+    }
+
+    // 执行“下一题”动作 (在答错后等待状态下点击按钮)
+    function doNextQuestion() {
+        if (!waitingForNext) return; // 安全起见
+        
+        // 刷新题目并重置交互状态，清除错误提示，展示新题
+        refreshQuestion(true);
+        // 额外保证 feedback 显示为下一题提示
+        feedbackDiv.innerHTML = "➡️ 新题目，继续挑战！加油～";
+        speakMessage(`下一题！ ${currentQuestion.text} 等于多少？`);
+        // 确保输入框可用且聚焦
+        answerInput.disabled = false;
+        answerInput.focus();
+    }
+
+    // ---------- 提交答案逻辑（核心修改）----------
+    function handleSubmit() {
+        // 情况1：处于等待下一题的状态，则执行下一题操作
+        if (waitingForNext) {
+            doNextQuestion();
+            return;
+        }
+        
+        // 情况2：正常作答模式
+        const userAnsRaw = answerInput.value.trim();
+        if (userAnsRaw === "") {
+            feedbackDiv.innerHTML = "📝 在方框中输入答案吧！";
+            speakMessage("请输入答案");
+            answerInput.focus();
+            return;
+        }
+        const userAns = Number(userAnsRaw);
+        if (isNaN(userAns)) {
+            feedbackDiv.innerHTML = "🔢 请输入有效的数字答案！";
+            speakMessage("需要输入数字哦");
+            answerInput.value = '';
+            answerInput.focus();
+            return;
+        }
+        
+        // 核对答案
+        if (userAns === currentQuestion.answer) {
+            // 回答正确：加分，显示正确信息，自动刷新下一题（直接跳转）
+            score++;
+            updateScoreUI();
+            feedbackDiv.innerHTML = `🎉 完全正确！ +1分  🎉`;
+            speakMessage(`完全正确！ 当前得分 ${score} 分，继续下一题！`);
+            // 正确时自动进入下一题 (刷新题目)
+            // 注意：刷新时会重置交互状态，并且会覆盖feedback，但用户能看到正确提示一瞬间，同时语音告知，体验良好
+            refreshQuestion(true);
+            // 刷新后额外提醒（可选，保留新题目的默认反馈即可）
+        } else {
+            // 回答错误：不跳转，显示正确答案，禁用输入框，将按钮变为“下一题”，进入等待状态
+            const correctAns = currentQuestion.answer;
+            feedbackDiv.innerHTML = `❌ 不对哦，正确答案是 ${correctAns}。 请点击“下一题”继续挑战！`;
+            speakMessage(`正确答案是 ${correctAns}，别灰心，点击下一题继续挑战！`);
+            
+            // 进入错误等待状态
+            waitingForNext = true;
+            answerInput.disabled = true;      // 禁用输入框，防止重复提交
+            submitBtn.innerText = "➡ 下一题";
+            // 不清空输入框，保留用户错误答案作为参考，同时输入框变灰无法编辑
+        }
+    }
+
+    // 同步设置（从UI获取范围/运算），如果改变则重置游戏
+    function syncSettingsFromUI() {
+        let newOp = operationSelect.value;
+        let newMin = parseInt(minRangeInput.value, 10);
+        let newMax = parseInt(maxRangeInput.value, 10);
+        
+        if (isNaN(newMin)) newMin = 0;
+        if (isNaN(newMax)) newMax = 20;
+        if (newMin < 0) newMin = 0;
+        if (newMax < 1) newMax = 1;
+        if (newMin > newMax) {
+            [newMin, newMax] = [newMax, newMin];
+            minRangeInput.value = newMin;
+            maxRangeInput.value = newMax;
+        }
+        
+        let changed = (currentOp !== newOp) || (minVal !== newMin) || (maxVal !== newMax);
+        currentOp = newOp;
+        minVal = newMin;
+        maxVal = newMax;
+        
+        if (changed) {
+            // 任何设置变化强制重置游戏（分数归零，刷新题目，清除等待状态）
+            resetGame();
+        }
+    }
+
+    // 监听设置变化
+    function bindSettingsEvents() {
+        operationSelect.addEventListener('change', () => {
+            syncSettingsFromUI();
+        });
+        minRangeInput.addEventListener('change', () => {
+            syncSettingsFromUI();
+        });
+        maxRangeInput.addEventListener('change', () => {
+            syncSettingsFromUI();
+        });
+        resetBtn.addEventListener('click', () => {
+            // 确保同步最新UI值到变量
+            let newMin = parseInt(minRangeInput.value, 10);
+            let newMax = parseInt(maxRangeInput.value, 10);
+            if (!isNaN(newMin)) minVal = newMin;
+            if (!isNaN(newMax)) maxVal = newMax;
+            if (minVal > maxVal) { let t = minVal; minVal = maxVal; maxVal = t; minRangeInput.value = minVal; maxRangeInput.value = maxVal; }
+            currentOp = operationSelect.value;
+            resetGame();
+        });
+    }
+    
+    // 键盘事件（回车提交 / 等待状态下回车触发下一题）
+    function answerKeyHandler(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            if (waitingForNext) {
+                doNextQuestion();
+            } else {
+                handleSubmit();
+            }
+        }
+    }
+    
+    // 初始化游戏
+    function initGame() {
+        let initMin = parseInt(minRangeInput.value, 10);
+        let initMax = parseInt(maxRangeInput.value, 10);
+        if (isNaN(initMin)) initMin = 1;
+        if (isNaN(initMax)) initMax = 20;
+        if (initMin > initMax) { let swap = initMin; initMin = initMax; initMax = swap; minRangeInput.value = initMin; maxRangeInput.value = initMax; }
+        minVal = initMin;
+        maxVal = initMax;
+        currentOp = operationSelect.value;
+        
+        score = 0;
+        waitingForNext = false;
+        updateScoreUI();
+        // 生成第一道题
+        currentQuestion = generateQuestionBySettings();
+        questionDiv.innerText = currentQuestion.text + " = ?";
+        answerInput.disabled = false;
+        submitBtn.innerText = "✓ 作答";
+        answerInput.value = '';
+        feedbackDiv.innerHTML = "✨ 新游戏！选择运算和范围，心算得分吧 ✨";
+        speakMessage(`算术大挑战开始啦！当前模式${getOpChinese()}，范围从${minVal}到${maxVal}，快速心算得分吧！`);
+        answerInput.focus();
+        
+        // 绑定事件 (避免重复绑定)
+        submitBtn.removeEventListener('click', handleSubmit);
+        submitBtn.addEventListener('click', handleSubmit);
+        answerInput.removeEventListener('keypress', answerKeyHandler);
+        answerInput.addEventListener('keypress', answerKeyHandler);
+    }
+    
+    // 范围合法性校验 + 自动同步
+    function setupRangeValidation() {
+        const validateRange = () => {
+            let mn = parseInt(minRangeInput.value, 10);
+            let mx = parseInt(maxRangeInput.value, 10);
+            if (isNaN(mn)) mn = 0;
+            if (isNaN(mx)) mx = 20;
+            if (mn < 0) mn = 0;
+            if (mx < 1) mx = 1;
+            if (mn > mx) {
+                minRangeInput.value = mx;
+                maxRangeInput.value = mn;
+            } else {
+                minRangeInput.value = mn;
+                maxRangeInput.value = mx;
+            }
+            syncSettingsFromUI(); // 同步并可能重置游戏
+        };
+        minRangeInput.addEventListener('blur', validateRange);
+        maxRangeInput.addEventListener('blur', validateRange);
+    }
+    
+    window.addEventListener('DOMContentLoaded', () => {
+        initGame();
+        bindSettingsEvents();
+        setupRangeValidation();
+    });
+</script>
+<script src="/frontend/rest_check.js"></script>
+</body>
+</html>

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>句子排序 - 小智乐园</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { background: #F0F7FF; font-family: 'Comic Neue', cursive; display: flex; justify-content: center; padding: 20px; }
+        .container { max-width: 700px; width: 100%; background: white; border-radius: 40px; padding: 30px; text-align: center; }
+        .back-btn { background: #E8A735; border: none; padding: 8px 20px; border-radius: 30px; cursor: pointer; margin-bottom: 20px; }
+        .sentence-area { background: #FFF9E8; border-radius: 30px; padding: 20px; margin: 20px 0; }
+        .words { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; margin: 20px 0; }
+        .word-btn { background: #E8A735; color: white; border: none; padding: 12px 20px; border-radius: 50px; font-size: 1.1rem; cursor: pointer; transition: 0.1s; }
+        .word-btn.selected { background: #4CAF50; }
+        .check-btn { background: #4CAF50; border: none; padding: 12px 25px; border-radius: 40px; font-size: 1.1rem; cursor: pointer; margin: 10px; }
+        .reset-btn { background: #E8A735; border: none; padding: 12px 25px; border-radius: 40px; cursor: pointer; }
+        .feedback { margin-top: 20px; font-size: 1.1rem; font-weight: bold; background: #FFF3E0; border-radius: 30px; padding: 15px; }
+        .analysis { margin-top: 15px; font-size: 0.95rem; color: #555; text-align: left; background: #FFF9F0; border-radius: 20px; padding: 12px; }
+    </style>
+</head>
+<body>
+    <script src="/frontend/distance_check.js"></script>
+<div class="container">
+    <button class="back-btn" onclick="location.href='/game/reading'">← 返回阅读分类</button>
+    <h2>📝 句子排序</h2>
+    <p>按正确的顺序点击词语，组成一句通顺的话</p>
+    <div class="sentence-area">
+        <div><strong>打乱的词语：</strong></div>
+        <div class="words" id="wordsContainer"></div>
+        <div><strong>你的排序：</strong></div>
+        <div class="words" id="selectedContainer"></div>
+    </div>
+    <button class="check-btn" id="checkBtn">✅ 检查答案</button>
+    <button class="reset-btn" id="resetBtn">🔄 重新排序</button>
+    <div class="feedback" id="feedbackMsg"></div>
+    <div class="analysis" id="analysisArea" style="display:none;"></div>
+</div>
+<script>
+    const correctSentence = ["我", "爱", "学习", "中文"];
+    let shuffledWords = [];
+    let selectedOrder = [];
+
+    function shuffle(arr) { let a = [...arr]; for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+    function initGame() {
+        shuffledWords = shuffle([...correctSentence]);
+        selectedOrder = [];
+        render();
+        document.getElementById('feedbackMsg').innerHTML = '';
+        document.getElementById('analysisArea').style.display = 'none';
+    }
+    function render() {
+        const wordsDiv = document.getElementById('wordsContainer');
+        wordsDiv.innerHTML = '';
+        shuffledWords.forEach((word, idx) => {
+            const btn = document.createElement('button');
+            btn.innerText = word;
+            btn.classList.add('word-btn');
+            btn.onclick = () => addToSelected(idx);
+            wordsDiv.appendChild(btn);
+        });
+        const selectedDiv = document.getElementById('selectedContainer');
+        selectedDiv.innerHTML = '';
+        selectedOrder.forEach((item) => {
+            const span = document.createElement('span');
+            span.innerText = item;
+            span.style.background = "#FFD966";
+            span.style.padding = "8px 15px";
+            span.style.borderRadius = "40px";
+            span.style.margin = "5px";
+            span.style.display = "inline-block";
+            selectedDiv.appendChild(span);
+        });
+    }
+    function addToSelected(idx) {
+        const word = shuffledWords[idx];
+        selectedOrder.push(word);
+        shuffledWords.splice(idx,1);
+        render();
+    }
+    function checkAnswer() {
+        if(selectedOrder.length !== correctSentence.length) {
+            document.getElementById('feedbackMsg').innerHTML = "⚠️ 还没有选完所有词语哦，继续排序！";
+            document.getElementById('analysisArea').style.display = 'none';
+            speakMessage("还没有选完所有词语哦，继续排序！");
+            return;
+        }
+        let isCorrect = true;
+        let wrongPositions = [];
+        for(let i=0;i<correctSentence.length;i++) {
+            if(selectedOrder[i] !== correctSentence[i]) {
+                isCorrect = false;
+                wrongPositions.push({pos: i+1, userWord: selectedOrder[i], correctWord: correctSentence[i]});
+            }
+        }
+        const feedbackDiv = document.getElementById('feedbackMsg');
+        const analysisDiv = document.getElementById('analysisArea');
+        if(isCorrect) {
+            feedbackDiv.innerHTML = "🎉 完全正确！句子通顺极了！";
+            analysisDiv.style.display = 'none';
+            speakMessage("太棒了！你排出了正确的句子！");
+        } else {
+            feedbackDiv.innerHTML = "❌ 顺序不对，再试试看！";
+            // 生成详细解析
+            let analysisHtml = `<strong>📖 答案解析：</strong><br>正确句子应该是：<span style="background:#E8F5E9; padding:4px 12px; border-radius:20px;">${correctSentence.join(" → ")}</span><br><br>`;
+            analysisHtml += `<strong>你的排序：</strong> ${selectedOrder.join(" → ")}<br><br>`;
+            analysisHtml += `<strong>错误位置分析：</strong><ul>`;
+            for(let err of wrongPositions) {
+                analysisHtml += `<li>第 ${err.pos} 个位置：你放了 “${err.userWord}”，正确答案应该是 “${err.correctWord}”</li>`;
+            }
+            analysisHtml += `</ul><strong>💡 小提示：</strong> 试着按“主语→谓语→宾语”的顺序思考。`;
+            analysisDiv.innerHTML = analysisHtml;
+            analysisDiv.style.display = 'block';
+            speakMessage(`顺序不对。正确句子是：${correctSentence.join("")}。${wrongPositions.length}个位置错误，再试试看。`);
+        }
+    }
+    function resetGame() { initGame(); speakMessage("重新开始排序，试试看！"); }
+    function speakMessage(text) { fetch('/api/speak',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text})}).catch(e=>console.log); }
+    document.getElementById('checkBtn').addEventListener('click', checkAnswer);
+    document.getElementById('resetBtn').addEventListener('click', resetGame);
+    initGame();
+    speakMessage("把词语按正确顺序排列，组成一句通顺的话吧！");
+</script>
+<script src="/frontend/rest_check.js"></script>
+</body>
+</html>

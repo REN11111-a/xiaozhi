@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>颜色混合实验室 - 小智乐园</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { background: #F0F0E8; font-family: 'Comic Neue', cursive; display: flex; justify-content: center; padding: 20px; }
+        .container { max-width: 700px; width: 100%; background: white; border-radius: 40px; padding: 30px; text-align: center; }
+        .back-btn { background: #E8A735; border: none; padding: 8px 20px; border-radius: 30px; cursor: pointer; margin-bottom: 20px; }
+        .color-preview { width: 150px; height: 150px; border-radius: 30px; margin: 20px auto; border: 3px solid #ddd; }
+        .sliders { margin: 20px 0; }
+        .slider-group { display: flex; align-items: center; justify-content: space-between; margin: 15px 0; gap: 15px; }
+        .slider-group label { width: 40px; font-weight: bold; }
+        input[type="range"] { flex: 1; }
+        .rgb-value { width: 50px; text-align: center; background: #f5f5f5; border-radius: 20px; padding: 5px; }
+        .color-name { font-size: 1.2rem; margin-top: 15px; font-weight: bold; }
+        @media (max-width: 600px) { .slider-group { flex-wrap: wrap; } }
+    </style>
+</head>
+<body>
+<div class="container">
+    <button class="back-btn" onclick="location.href='/game/art'">← 返回艺术分类</button>
+    <h2>🎨 颜色混合实验室</h2>
+    <p>拖动滑块，混合出任意颜色！</p>
+    <div class="color-preview" id="colorPreview"></div>
+    <div class="sliders">
+        <div class="slider-group"><label style="color:red">R</label><input type="range" id="redSlider" min="0" max="255" value="255"><span class="rgb-value" id="redVal">255</span></div>
+        <div class="slider-group"><label style="color:green">G</label><input type="range" id="greenSlider" min="0" max="255" value="0"><span class="rgb-value" id="greenVal">0</span></div>
+        <div class="slider-group"><label style="color:blue">B</label><input type="range" id="blueSlider" min="0" max="255" value="0"><span class="rgb-value" id="blueVal">0</span></div>
+    </div>
+    <div class="color-name" id="colorName">纯红色</div>
+    <button id="randomBtn" style="background:#E8A735; border:none; padding:8px 20px; border-radius:30px; margin-top:20px; cursor:pointer;">🎲 随机颜色</button>
+</div>
+<script src="/frontend/distance_check.js"></script>
+<script>
+    const redSlider = document.getElementById('redSlider');
+    const greenSlider = document.getElementById('greenSlider');
+    const blueSlider = document.getElementById('blueSlider');
+    const preview = document.getElementById('colorPreview');
+    const redVal = document.getElementById('redVal');
+    const greenVal = document.getElementById('greenVal');
+    const blueVal = document.getElementById('blueVal');
+    const colorNameSpan = document.getElementById('colorName');
+    function updateColor() {
+        let r = parseInt(redSlider.value);
+        let g = parseInt(greenSlider.value);
+        let b = parseInt(blueSlider.value);
+        preview.style.backgroundColor = `rgb(${r},${g},${b})`;
+        redVal.innerText = r; greenVal.innerText = g; blueVal.innerText = b;
+        // 简单颜色名称
+        if(r>200 && g<50 && b<50) colorNameSpan.innerText = "红色";
+        else if(r<50 && g>200 && b<50) colorNameSpan.innerText = "绿色";
+        else if(r<50 && g<50 && b>200) colorNameSpan.innerText = "蓝色";
+        else if(r>200 && g>200 && b<100) colorNameSpan.innerText = "黄色";
+        else if(r>200 && g<100 && b>200) colorNameSpan.innerText = "品红色";
+        else if(r<100 && g>200 && b>200) colorNameSpan.innerText = "青色";
+        else if(r>200 && g>200 && b>200) colorNameSpan.innerText = "白色";
+        else if(r<50 && g<50 && b<50) colorNameSpan.innerText = "黑色";
+        else if(r>150 && g>100 && b<100) colorNameSpan.innerText = "橙色";
+        else if(r>150 && g>150 && b>150) colorNameSpan.innerText = "浅灰色";
+        else colorNameSpan.innerText = `自定义颜色 (${r},${g},${b})`;
+    }
+    redSlider.addEventListener('input', updateColor);
+    greenSlider.addEventListener('input', updateColor);
+    blueSlider.addEventListener('input', updateColor);
+    document.getElementById('randomBtn').addEventListener('click', () => {
+        redSlider.value = Math.floor(Math.random()*256);
+        greenSlider.value = Math.floor(Math.random()*256);
+        blueSlider.value = Math.floor(Math.random()*256);
+        updateColor();
+        speakMessage("随机生成了一种新颜色！");
+    });
+    function speakMessage(text) { fetch('/api/speak',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text})}).catch(e=>console.log); }
+    updateColor();
+    speakMessage("混合红绿蓝三种颜色，看看能调出什么颜色吧！");
+</script>
+<script src="/frontend/rest_check.js"></script>
+</body>
+</html>

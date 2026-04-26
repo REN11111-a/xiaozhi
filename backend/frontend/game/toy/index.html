@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>玩具工坊 - 小智乐园</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background: #FFF0DB;
+            font-family: 'Comic Neue', 'Segoe UI', cursive, sans-serif;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: white;
+            padding: 12px 30px;
+            border-radius: 60px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            margin-bottom: 40px;
+        }
+        .back-home {
+            background: #E8A735;
+            color: white;
+            text-decoration: none;
+            padding: 10px 25px;
+            border-radius: 40px;
+            font-weight: bold;
+        }
+        .back-home:hover { background: #d18e1f; }
+        .header-title { font-size: 1.3rem; color: #5d4037; }
+        .robot-welcome {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 50px;
+            flex-wrap: wrap;
+        }
+        .robot-avatar {
+            width: 200px; height: 200px;
+            border-radius: 50%;
+            border: 5px solid #E8A735;
+            background: #e3f2fd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        .robot-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .robot-greeting {
+            background: white;
+            padding: 30px 40px;
+            border-radius: 30px;
+            max-width: 600px;
+        }
+        .robot-greeting h2 { color: #E8A735; font-size: 2rem; margin-bottom: 15px; }
+        .robot-greeting p { color: #555; font-size: 1.2rem; }
+        .game-section { text-align: center; margin-bottom: 50px; }
+        .game-title { font-size: 2.5rem; color: #5d4037; margin-bottom: 15px; }
+        .game-subtitle { font-size: 1.1rem; color: #777; margin-bottom: 50px; }
+        .game-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 30px;
+            padding: 0 20px;
+        }
+        .game-card {
+            background: white;
+            border-radius: 35px;
+            padding: 30px 20px;
+            cursor: pointer;
+            transition: 0.3s;
+            text-decoration: none;
+            color: inherit;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            border: 1px solid rgba(232,167,53,0.2);
+        }
+        .game-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 30px rgba(0,0,0,0.1);
+            border-color: #E8A735;
+        }
+        .game-icon { font-size: 70px; }
+        .game-name { font-size: 1.6rem; font-weight: bold; color: #333; }
+        .game-desc { font-size: 0.95rem; color: #777; }
+        @media (max-width: 768px) {
+            .robot-welcome { flex-direction: column; text-align: center; }
+            .game-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+    <script src="/frontend/distance_check.js"></script>
+<div class="container">
+    <div class="game-header">
+        <a href="/games" class="back-home">← 返回游戏乐园</a>
+        <div class="header-title">🧸 玩具工坊</div>
+    </div>
+    <div class="robot-welcome">
+        <div class="robot-avatar"><img src="/frontend/xiaozhi.png" alt="小智"></div>
+        <div class="robot-greeting">
+            <h2>🧸 我是小智</h2>
+            <p>扮演小主人，照顾宠物，创造乐趣！</p>
+        </div>
+    </div>
+    <div class="game-section">
+        <h2 class="game-title">🎈 选择玩具游戏</h2>
+        <p class="game-subtitle">点击卡片开始玩耍~</p>
+        <div class="game-grid">
+            <a href="/game/toy/virtual_pet" class="game-card">
+                <div class="game-icon">🐣</div>
+                <div class="game-name">虚拟宠物</div>
+                <div class="game-desc">喂食 · 玩耍 · 照顾宠物</div>
+            </a>
+           <a href="/game/toy/dress_up" class="game-card">
+      <div class="game-icon">🔧</div>
+    <div class="game-name">玩具修理师</div>
+    <div class="game-desc">按顺序修理损坏的玩具</div>
+        </a>
+            <a href="/game/toy/role_play" class="game-card">
+                <div class="game-icon">🏥</div>
+                <div class="game-name">小小医生</div>
+                <div class="game-desc">扮演医生给玩具治病</div>
+            </a>
+        </div>
+    </div>
+</div>
+<script>
+    let speechQueue = [];
+    let isProcessingQueue = false;
+    function stopAllSpeech() {
+        speechQueue = [];
+        isProcessingQueue = false;
+        fetch('/api/stop_speak', { method: 'POST' }).catch(e => console.log('停止语音失败:', e));
+    }
+    function speakMessage(text) {
+        if (!text) return;
+        stopAllSpeech();
+        speechQueue.push(text.trim());
+        processSpeechQueue();
+    }
+    function processSpeechQueue() {
+        if (isProcessingQueue) return;
+        if (speechQueue.length === 0) return;
+        isProcessingQueue = true;
+        const text = speechQueue.shift();
+        const estimatedDuration = Math.max(800, text.length * 200);
+        fetch('/api/speak', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: text })
+        }).then(() => {
+            setTimeout(() => {
+                isProcessingQueue = false;
+                processSpeechQueue();
+            }, estimatedDuration);
+        }).catch(e => {
+            console.log('语音请求失败:', e);
+            isProcessingQueue = false;
+            processSpeechQueue();
+        });
+    }
+    document.addEventListener('DOMContentLoaded', () => {
+        speakMessage("欢迎来到玩具工坊，选一个游戏开始玩耍吧！");
+    });
+</script>
+<script src="/frontend/rest_check.js"></script>
+</body>
+</html>

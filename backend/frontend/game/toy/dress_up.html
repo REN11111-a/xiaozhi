@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>玩具修理师 - 小智乐园</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            background: #FFF0DB;
+            font-family: 'Comic Neue', cursive;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            margin: 0;
+        }
+        .container {
+            background: white;
+            border-radius: 48px;
+            padding: 25px;
+            max-width: 650px;
+            width: 100%;
+            text-align: center;
+        }
+        .back-btn {
+            background: #E8A735;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 40px;
+            cursor: pointer;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        h2 { color: #5D4037; margin: 10px 0; }
+        .toy-area {
+            background: #F9E6CF;
+            border-radius: 50px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .toy-emoji {
+            font-size: 100px;
+            transition: 0.2s;
+        }
+        .damage-desc {
+            font-size: 1.1rem;
+            margin: 15px 0;
+            color: #E67E22;
+            font-weight: bold;
+        }
+        .steps-area {
+            background: #FFF3E0;
+            border-radius: 30px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .steps-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .step-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 12px;
+            margin: 10px 0;
+        }
+        .step-btn {
+            background: #E8A735;
+            border: none;
+            border-radius: 40px;
+            padding: 10px 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.1s;
+            font-family: inherit;
+        }
+        .step-btn:hover { background: #d18e1f; transform: scale(1.02); }
+        .step-btn.disabled, .step-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .selected-steps {
+            background: #FFE0B2;
+            border-radius: 30px;
+            padding: 10px;
+            margin: 15px 0;
+            min-height: 60px;
+        }
+        .selected-steps span {
+            display: inline-block;
+            background: #4CAF50;
+            color: white;
+            border-radius: 30px;
+            padding: 5px 12px;
+            margin: 5px;
+            font-size: 0.9rem;
+        }
+        .message {
+            background: #FFF9E8;
+            border-radius: 30px;
+            padding: 12px;
+            margin-top: 15px;
+            font-size: 0.95rem;
+        }
+        .reset-btn {
+            background: #4CAF50;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 40px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        .next-btn {
+            background: #2196F3;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 40px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 10px;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <script src="/frontend/distance_check.js"></script>
+<div class="container">
+    <button class="back-btn" onclick="location.href='/game/toy'">← 返回玩具工坊</button>
+    <h2>🔧 玩具修理师</h2>
+    <div class="toy-area">
+        <div class="toy-emoji" id="toyEmoji">🧸💔</div>
+        <div class="damage-desc" id="damageDesc">泰迪熊的胳膊断了，纽扣眼睛也掉了...</div>
+    </div>
+    <div class="steps-area">
+        <div class="steps-title">🔨 修理步骤（按正确顺序点击）</div>
+        <div class="step-buttons" id="stepButtons"></div>
+    </div>
+    <div class="selected-steps" id="selectedSteps">
+        <strong>你的修理顺序：</strong><br>
+        <span id="orderList">暂无</span>
+    </div>
+    <div class="message" id="msgArea">点击修理工具，按正确顺序修复玩具！</div>
+    <button class="reset-btn" id="resetBtn">🔄 重新修理</button>
+    <button class="next-btn" id="nextBtn" style="display: none;">🎁 下一个玩具</button>
+</div>
+<script>
+    // 玩具数据（可无限扩展）
+    const toys = [
+        {
+            name: "泰迪熊",
+            emoji: "🧸",
+            damage: "胳膊断了，纽扣眼睛也掉了...",
+            correctOrder: ["清洁", "缝合胳膊", "缝上眼睛", "整理毛发"],
+            steps: ["清洁", "缝合胳膊", "缝上眼睛", "整理毛发", "喷香水", "换新蝴蝶结"],
+            explanations: {
+                "清洁": "先清洁玩具表面的灰尘。",
+                "缝合胳膊": "用针线把断掉的胳膊缝好。",
+                "缝上眼睛": "把掉落的纽扣眼睛缝回去。",
+                "整理毛发": "梳理一下毛发，让它更蓬松。",
+                "喷香水": "喷一点香水，玩具香香的（可选步骤）。",
+                "换新蝴蝶结": "系上新的蝴蝶结装饰。"
+            }
+        },
+        {
+            name: "机器人",
+            emoji: "🤖",
+            damage: "电池没电了，螺丝松动，手臂不灵活。",
+            correctOrder: ["拧紧螺丝", "更换电池", "涂润滑油"],
+            steps: ["拧紧螺丝", "更换电池", "涂润滑油", "擦拭外壳", "重启系统"],
+            explanations: {
+                "拧紧螺丝": "用螺丝刀把松动的螺丝拧紧。",
+                "更换电池": "换上全新的电池。",
+                "涂润滑油": "在关节处涂上润滑油，恢复灵活。",
+                "擦拭外壳": "把外壳擦干净。",
+                "重启系统": "按下重启按钮。"
+            }
+        },
+        {
+            name: "布娃娃",
+            emoji: "🎎",
+            damage: "裙子破了，头发乱了，少了一只鞋。",
+            correctOrder: ["缝补裙子", "梳理头发", "找到鞋子"],
+            steps: ["缝补裙子", "梳理头发", "找到鞋子", "系上发带", "清洗脸蛋"],
+            explanations: {
+                "缝补裙子": "用针线把裙子破洞补好。",
+                "梳理头发": "用梳子把打结的头发梳顺。",
+                "找到鞋子": "在玩具箱里找到丢失的鞋子。",
+                "系上发带": "系上漂亮的发带。",
+                "清洗脸蛋": "用湿布擦干净脸蛋。"
+            }
+        }
+    ];
+
+    let currentToyIndex = 0;
+    let currentToy = null;
+    let correctOrder = [];
+    let availableSteps = [];
+    let selectedSteps = [];
+    let gameCompleted = false;
+
+    function loadToy(index) {
+        currentToy = toys[index % toys.length];
+        correctOrder = [...currentToy.correctOrder];
+        availableSteps = shuffleArray([...currentToy.steps]);
+        selectedSteps = [];
+        gameCompleted = false;
+        document.getElementById('toyEmoji').innerHTML = currentToy.emoji + "💔";
+        document.getElementById('damageDesc').innerHTML = currentToy.damage;
+        document.getElementById('msgArea').innerHTML = "点击修理工具，按正确顺序修复玩具！";
+        document.getElementById('nextBtn').style.display = 'none';
+        renderSteps();
+        updateSelectedDisplay();
+        speakMessage(`请修理${currentToy.name}，按正确顺序选择步骤。`);
+    }
+
+    function shuffleArray(arr) {
+        for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+    }
+
+    function renderSteps() {
+        const container = document.getElementById('stepButtons');
+        container.innerHTML = '';
+        availableSteps.forEach(step => {
+            const btn = document.createElement('button');
+            btn.innerText = step;
+            btn.classList.add('step-btn');
+            btn.addEventListener('click', () => selectStep(step));
+            container.appendChild(btn);
+        });
+    }
+
+    function selectStep(step) {
+        if (gameCompleted) {
+            speakMessage("玩具已经修好啦！点击下一个玩具继续挑战。");
+            return;
+        }
+        // 检查当前应该选择的正确步骤
+        const nextExpected = correctOrder[selectedSteps.length];
+        if (step === nextExpected) {
+            // 正确
+            selectedSteps.push(step);
+            // 从可用步骤中移除
+            const index = availableSteps.indexOf(step);
+            if (index !== -1) availableSteps.splice(index, 1);
+            renderSteps();
+            updateSelectedDisplay();
+            speakMessage(`正确！${currentToy.explanations[step] || step + "完成。"}`);
+            if (selectedSteps.length === correctOrder.length) {
+                // 修理完成
+                gameCompleted = true;
+                document.getElementById('toyEmoji').innerHTML = currentToy.emoji + "✨";
+                document.getElementById('msgArea').innerHTML = `🎉 太棒了！${currentToy.name} 修好啦！点击“下一个玩具”继续挑战。`;
+                speakMessage(`恭喜！你成功修好了${currentToy.name}！`);
+                document.getElementById('nextBtn').style.display = 'block';
+            }
+        } else {
+            // 顺序错误
+            let hint = `顺序不对哦，应该先${correctOrder[selectedSteps.length]}。`;
+            speakMessage(hint);
+            document.getElementById('msgArea').innerHTML = `❌ ${hint} 再试试看。`;
+        }
+    }
+
+    function updateSelectedDisplay() {
+        const orderSpan = document.getElementById('orderList');
+        if (selectedSteps.length === 0) {
+            orderSpan.innerHTML = "暂无";
+        } else {
+            orderSpan.innerHTML = selectedSteps.map(s => `<span>${s}</span>`).join('');
+        }
+    }
+
+    function resetGame() {
+        loadToy(currentToyIndex);
+    }
+
+    function nextToy() {
+        currentToyIndex++;
+        loadToy(currentToyIndex);
+    }
+
+    function speakMessage(text) {
+        fetch('/api/speak', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: text })
+        }).catch(e => console.log);
+    }
+
+    document.getElementById('resetBtn').addEventListener('click', resetGame);
+    document.getElementById('nextBtn').addEventListener('click', nextToy);
+    loadToy(0);
+</script>
+<script src="/frontend/rest_check.js"></script>
+</body>
+</html>

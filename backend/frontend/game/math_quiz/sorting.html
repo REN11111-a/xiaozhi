@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>数字排序王 - 小智乐园</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { background: #F0F0E8; font-family: 'Comic Neue', cursive; display: flex; justify-content: center; padding: 20px; }
+        .container { max-width: 700px; width: 100%; background: white; border-radius: 40px; padding: 30px; text-align: center; }
+        .back-btn { background: #E8A735; border: none; padding: 8px 20px; border-radius: 30px; cursor: pointer; margin-bottom: 20px; font-weight: bold; }
+        .score-board { font-size: 1.3rem; background: #FFF2E6; display: inline-block; padding: 8px 20px; border-radius: 40px; margin: 15px 0; }
+        .numbers-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; margin: 30px 0; }
+        .number-btn {
+            background: #E8A735; width: 80px; height: 80px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 2rem; font-weight: bold; color: white;
+            cursor: pointer; transition: 0.1s; box-shadow: 0 5px 0 #b97f10;
+        }
+        .number-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #b97f10; }
+        .sorted-list {
+            background: #FFF2E6; padding: 15px; border-radius: 40px;
+            margin-top: 20px; min-height: 80px;
+            display: flex; flex-wrap: wrap; justify-content: center; gap: 10px;
+        }
+        .sorted-item {
+            background: #4CAF50; padding: 8px 18px; border-radius: 40px;
+            color: white; font-weight: bold; font-size: 1.2rem;
+        }
+        .reset-btn { background: #FF6B6B; border: none; padding: 12px 25px; border-radius: 40px; font-size: 1rem; cursor: pointer; margin-top: 20px; }
+        .feedback { font-size: 1.2rem; margin: 15px 0; min-height: 60px; }
+        @media (max-width: 600px) { .number-btn { width: 60px; height: 60px; font-size: 1.5rem; } }
+    </style>
+</head>
+<body>
+    <script src="/frontend/distance_check.js"></script>
+<div class="container">
+    <button class="back-btn" onclick="location.href='/game/math_quiz'">← 返回数学探险岛</button>
+    <h2>🔢 数字排序王</h2>
+    <p>从小到大依次点击数字！顺序正确才能得分~</p>
+    <div class="score-board">🏆 得分: <span id="score">0</span> / <span id="total">5</span></div>
+    <div id="numbersArea" class="numbers-container"></div>
+    <div id="sortedArea" class="sorted-list">
+        <span style="color:#888;">已正确排序的数字会出现在这里</span>
+    </div>
+    <button id="resetBtn" class="reset-btn">🔄 重新挑战</button>
+    <div class="feedback" id="feedback"></div>
+</div>
+<script>
+    let numbers = [];
+    let sortedCorrectly = [];
+    let totalCount = 5;
+    let score = 0;
+
+    const scoreSpan = document.getElementById('score');
+    const totalSpan = document.getElementById('total');
+    const numbersArea = document.getElementById('numbersArea');
+    const sortedArea = document.getElementById('sortedArea');
+    const feedbackDiv = document.getElementById('feedback');
+
+    function speakMessage(text) {
+        fetch('/api/speak', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text }) }).catch(e => console.log);
+    }
+
+    function generateRandomNumbers(count) {
+        let nums = [];
+        while (nums.length < count) {
+            let r = Math.floor(Math.random() * 30) + 1;
+            if (!nums.includes(r)) nums.push(r);
+        }
+        return nums;
+    }
+
+    function renderGame() {
+        const remaining = numbers.filter(n => !sortedCorrectly.includes(n));
+        const shuffled = [...remaining];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        numbersArea.innerHTML = '';
+        shuffled.forEach(num => {
+            const btn = document.createElement('div');
+            btn.classList.add('number-btn');
+            btn.innerText = num;
+            btn.dataset.num = num;
+            btn.addEventListener('click', () => handleClick(num, btn));
+            numbersArea.appendChild(btn);
+        });
+
+        sortedArea.innerHTML = '';
+        if (sortedCorrectly.length === 0) {
+            const placeholder = document.createElement('span');
+            placeholder.style.color = '#888';
+            placeholder.innerText = '按从小到大的顺序点击数字...';
+            sortedArea.appendChild(placeholder);
+        } else {
+            sortedCorrectly.forEach(num => {
+                const chip = document.createElement('div');
+                chip.classList.add('sorted-item');
+                chip.innerText = num;
+                sortedArea.appendChild(chip);
+            });
+        }
+
+        scoreSpan.innerText = sortedCorrectly.length;
+        totalSpan.innerText = totalCount;
+
+        if (sortedCorrectly.length === totalCount) {
+            feedbackDiv.innerHTML = "🏆 完美排序！ 你真是数字排序王！ 🏆";
+            speakMessage("太厉害了，全部排序正确！获得满分！");
+        } else {
+            const nextExpected = getNextExpected();
+            feedbackDiv.innerHTML = `✨ 已正确排序 ${sortedCorrectly.length} 个，下一个应该点击 ${nextExpected} ！`;
+        }
+    }
+
+    function getNextExpected() {
+        const sortedAll = [...numbers].sort((a, b) => a - b);
+        return sortedAll[sortedCorrectly.length];
+    }
+
+    function handleClick(num, btnElement) {
+        if (sortedCorrectly.length === totalCount) {
+            speakMessage("游戏已完成，点击重新挑战可以继续玩");
+            return;
+        }
+        const nextExpected = getNextExpected();
+        if (num === nextExpected) {
+            sortedCorrectly.push(num);
+            btnElement.style.transform = "scale(0.9)";
+            setTimeout(() => { if (btnElement) btnElement.style.transform = ""; }, 100);
+            speakMessage(`正确！${num} 排序成功`);
+            renderGame();
+        } else {
+            feedbackDiv.innerHTML = `❌ 顺序错了！应该先点 ${nextExpected}，你点了 ${num}。重新开始这一轮吧！`;
+            speakMessage(`顺序错了，应该先点 ${nextExpected}，重新挑战`);
+            resetGameInternal();
+        }
+    }
+
+    function resetGameInternal() {
+        const newNumbers = generateRandomNumbers(totalCount);
+        numbers = [...newNumbers];
+        sortedCorrectly = [];
+        renderGame();
+        speakMessage("重新开始排序，从小到大依次点击吧！");
+    }
+
+    function initGame() {
+        numbers = generateRandomNumbers(totalCount);
+        sortedCorrectly = [];
+        renderGame();
+        feedbackDiv.innerHTML = "🔢 按从小到大的顺序点击数字！";
+        speakMessage("数字排序王开始，按顺序从小到大点击数字吧！");
+    }
+
+    document.getElementById('resetBtn').addEventListener('click', () => {
+        resetGameInternal();
+    });
+
+    initGame();
+</script>
+<script src="/frontend/rest_check.js"></script>
+</body>
+</html>

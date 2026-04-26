@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>虚拟宠物 - 小智乐园</title>
+    <style>
+        * { box-sizing: border-box; user-select: none; }
+        body {
+            background: #FFF0DB;
+            font-family: 'Comic Neue', 'Segoe UI', cursive, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            margin: 0;
+        }
+        .game-container {
+            background: white;
+            border-radius: 48px;
+            padding: 25px;
+            max-width: 550px;
+            width: 100%;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .back-btn {
+            background: #E8A735;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 40px;
+            font-weight: bold;
+            cursor: pointer;
+            font-family: inherit;
+            margin-bottom: 20px;
+            display: inline-block;
+        }
+        h2 { color: #5D4037; margin: 10px 0; }
+        .pet-emoji {
+            font-size: 120px;
+            margin: 15px 0;
+            transition: 0.2s;
+        }
+        .stats {
+            background: #F9E6CF;
+            border-radius: 30px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .stat {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 10px 0;
+            gap: 10px;
+        }
+        .stat span:first-child { width: 60px; text-align: left; }
+        progress {
+            flex: 1;
+            height: 18px;
+            border-radius: 10px;
+        }
+        .buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin: 20px 0;
+        }
+        button {
+            background: #E8A735;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 40px;
+            font-weight: bold;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 1rem;
+        }
+        .warning {
+            color: #E67E22;
+            font-size: 0.9rem;
+            margin-top: 10px;
+        }
+        .reset-btn {
+            background: #4CAF50;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <script src="/frontend/distance_check.js"></script>
+<div class="game-container">
+    <button class="back-btn" onclick="location.href='/game/toy'">← 返回玩具工坊</button>
+    <h2>🐣 虚拟宠物</h2>
+    <div class="pet-emoji" id="petEmoji">🐥</div>
+    <div class="stats">
+        <div class="stat"><span>🍖 饥饿</span><progress id="hungerBar" value="80" max="100"></progress><span id="hungerVal">80</span></div>
+        <div class="stat"><span>😊 快乐</span><progress id="happyBar" value="80" max="100"></progress><span id="happyVal">80</span></div>
+        <div class="stat"><span>💧 口渴</span><progress id="thirstBar" value="80" max="100"></progress><span id="thirstVal">80</span></div>
+        <div class="stat"><span>🧹 清洁</span><progress id="cleanBar" value="80" max="100"></progress><span id="cleanVal">80</span></div>
+    </div>
+    <div class="buttons">
+        <button id="feedBtn">🍎 喂食</button>
+        <button id="playBtn">🎾 玩耍</button>
+        <button id="waterBtn">💧 喝水</button>
+        <button id="cleanBtn">🧼 洗澡</button>
+    </div>
+    <div class="warning" id="msg"></div>
+    <button class="reset-btn" id="resetBtn">🔄 重新开始</button>
+</div>
+<script>
+    let hunger = 80, happiness = 80, thirst = 80, clean = 80;
+    let interval;
+
+    function updateUI() {
+        document.getElementById('hungerBar').value = hunger;
+        document.getElementById('happyBar').value = happiness;
+        document.getElementById('thirstBar').value = thirst;
+        document.getElementById('cleanBar').value = clean;
+        document.getElementById('hungerVal').innerText = hunger;
+        document.getElementById('happyVal').innerText = happiness;
+        document.getElementById('thirstVal').innerText = thirst;
+        document.getElementById('cleanVal').innerText = clean;
+
+        const pet = document.getElementById('petEmoji');
+        if (hunger <= 20 || thirst <= 20 || clean <= 20) pet.innerText = '😢';
+        else if (happiness <= 20) pet.innerText = '😞';
+        else if (hunger > 70 && happiness > 70 && thirst > 70 && clean > 70) pet.innerText = '🐥✨';
+        else pet.innerText = '🐥';
+
+        if (hunger <= 0 || thirst <= 0 || clean <= 0 || happiness <= 0) {
+            clearInterval(interval);
+            document.getElementById('msg').innerHTML = '💔 宠物很伤心，请点击“重新开始”照顾新宠物。';
+        }
+    }
+
+    function changeStat(stat, delta) {
+        if (stat === 'hunger') hunger = Math.min(100, Math.max(0, hunger + delta));
+        if (stat === 'happiness') happiness = Math.min(100, Math.max(0, happiness + delta));
+        if (stat === 'thirst') thirst = Math.min(100, Math.max(0, thirst + delta));
+        if (stat === 'clean') clean = Math.min(100, Math.max(0, clean + delta));
+        updateUI();
+        let msg = delta > 0 ? "宠物很开心！" : "要经常照顾宠物哦。";
+        speakMessage(msg);
+    }
+
+    function resetGame() {
+        hunger = 80; happiness = 80; thirst = 80; clean = 80;
+        if (interval) clearInterval(interval);
+        interval = setInterval(() => {
+            changeStat('hunger', -2);
+            changeStat('thirst', -2);
+            changeStat('clean', -1);
+            changeStat('happiness', -1);
+        }, 4000);
+        updateUI();
+        document.getElementById('msg').innerHTML = '';
+        speakMessage("新宠物诞生啦！记得喂食、喂水、洗澡和玩耍哦。");
+    }
+
+    function speakMessage(text) {
+        fetch('/api/speak', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: text })
+        }).catch(e => console.log);
+    }
+
+    document.getElementById('feedBtn').addEventListener('click', () => {
+        changeStat('hunger', +12);
+        changeStat('happiness', +3);
+    });
+    document.getElementById('playBtn').addEventListener('click', () => {
+        changeStat('happiness', +15);
+        changeStat('hunger', -5);
+        changeStat('thirst', -5);
+        changeStat('clean', -3);
+    });
+    document.getElementById('waterBtn').addEventListener('click', () => {
+        changeStat('thirst', +12);
+        changeStat('happiness', +2);
+    });
+    document.getElementById('cleanBtn').addEventListener('click', () => {
+        changeStat('clean', +15);
+        changeStat('happiness', +5);
+    });
+    document.getElementById('resetBtn').addEventListener('click', resetGame);
+
+    resetGame();
+</script>
+<script src="/frontend/rest_check.js"></script>
+</body>
+</html>

@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>找不同 - 小智乐园</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            background: #E9F0E6;
+            font-family: 'Comic Neue', cursive;
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+            margin: 0;
+        }
+        .container {
+            background: white;
+            border-radius: 48px;
+            padding: 25px;
+            max-width: 1000px;
+            width: 100%;
+            text-align: center;
+        }
+        .back-btn {
+            background: #E8A735;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 40px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+        h2 { color: #5D4037; }
+        .images-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 30px;
+            margin: 30px 0;
+        }
+        .image-panel {
+            background: #F9F2E0;
+            border-radius: 30px;
+            padding: 15px;
+            position: relative;
+        }
+        canvas {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            cursor: pointer;
+        }
+        .diff-counter {
+            font-size: 1.2rem;
+            background: #FFD966;
+            display: inline-block;
+            padding: 8px 25px;
+            border-radius: 40px;
+            margin: 15px 0;
+        }
+        .reset-btn {
+            background: #4CAF50;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 40px;
+            font-size: 1rem;
+            cursor: pointer;
+            margin: 10px;
+        }
+        .hint {
+            color: #777;
+            margin-top: 10px;
+        }
+        @media (max-width: 800px) {
+            canvas { width: 100%; height: auto; }
+        }
+    </style>
+</head>
+<body>
+    <script src="/frontend/distance_check.js"></script>
+<div class="container">
+    <button class="back-btn" onclick="location.href='/game/puzzle'">← 返回拼图分类</button>
+    <h2>🔍 找不同</h2>
+    <p>点击左边图片的不同之处（共5处）</p>
+    <div class="images-container">
+        <div class="image-panel"><canvas id="canvasLeft" width="400" height="300"></canvas><div>图A</div></div>
+        <div class="image-panel"><canvas id="canvasRight" width="400" height="300"></canvas><div>图B</div></div>
+    </div>
+    <div class="diff-counter">找到差异: <span id="foundCount">0</span> / 5</div>
+    <button class="reset-btn" id="resetBtn">🔄 新的一幅图</button>
+    <div class="hint">💡 提示：点击左侧图片中不同的地方，会标记圆圈。</div>
+</div>
+<script>
+    // 定义两组图片数据（简化：使用 Canvas 绘制矢量图，方便生成不同）
+    let currentDifferences = []; // 存储差异坐标 {x,y}
+    let found = [];
+    let foundCount = 0;
+    let ctxLeft, ctxRight;
+    const width = 400, height = 300;
+
+    // 生成随机场景：一个简单的房子+太阳+云，右侧随机修改5处
+    function drawBaseScene(ctx, isRight = false) {
+        // 背景天空
+        ctx.fillStyle = "#87CEEB";
+        ctx.fillRect(0, 0, width, height);
+        // 草地
+        ctx.fillStyle = "#7CFC00";
+        ctx.fillRect(0, height-80, width, 80);
+        // 太阳
+        ctx.fillStyle = "#FFD700";
+        ctx.beginPath();
+        ctx.arc(50, 50, 30, 0, 2*Math.PI);
+        ctx.fill();
+        // 房子
+        ctx.fillStyle = "#D2691E";
+        ctx.fillRect(150, height-130, 120, 100);
+        ctx.fillStyle = "#FF6347";
+        ctx.fillRect(190, height-100, 40, 70);
+        ctx.fillStyle = "#8B4513";
+        ctx.beginPath();
+        ctx.moveTo(140, height-130);
+        ctx.lineTo(280, height-130);
+        ctx.lineTo(210, height-170);
+        ctx.fill();
+        // 云
+        ctx.fillStyle = "#FFFFFF";
+        ctx.beginPath();
+        ctx.ellipse(300, 60, 35, 25, 0, 0, 2*Math.PI);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(340, 50, 30, 22, 0, 0, 2*Math.PI);
+        ctx.fill();
+        // 花朵
+        ctx.fillStyle = "#FF69B4";
+        for(let i=0;i<3;i++) {
+            ctx.beginPath();
+            ctx.arc(50+i*40, height-60, 8, 0, 2*Math.PI);
+            ctx.fill();
+        }
+    }
+
+    function applyRandomDifferences(ctx) {
+        // 随机修改5处：颜色、位置、大小等
+        const diffs = [];
+        // 1. 改变一朵花的颜色
+        ctx.fillStyle = "#FF0000";
+        ctx.beginPath();
+        ctx.arc(50, height-60, 8, 0, 2*Math.PI);
+        ctx.fill();
+        diffs.push({x:50, y:height-60});
+        // 2. 云少一个
+        ctx.fillStyle = "#87CEEB"; // 用天空色覆盖一个云
+        ctx.beginPath();
+        ctx.ellipse(340, 50, 32, 24, 0, 0, 2*Math.PI);
+        ctx.fill();
+        diffs.push({x:340, y:50});
+        // 3. 太阳加眼镜？ 简单加两个点
+        ctx.fillStyle = "#000000";
+        ctx.beginPath();
+        ctx.arc(35, 40, 3, 0, 2*Math.PI);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(65, 40, 3, 0, 2*Math.PI);
+        ctx.fill();
+        diffs.push({x:35, y:40});
+        diffs.push({x:65, y:40});
+        // 4. 房子窗户变方形
+        ctx.fillStyle = "#FFFF00";
+        ctx.fillRect(190, height-100, 40, 40);
+        diffs.push({x:210, y:height-80});
+        // 5. 移除一个花朵
+        ctx.fillStyle = "#7CFC00";
+        ctx.beginPath();
+        ctx.arc(130, height-60, 10, 0, 2*Math.PI);
+        ctx.fill();
+        diffs.push({x:130, y:height-60});
+        return diffs;
+    }
+
+    function generateNewScene() {
+        // 左侧正常场景
+        drawBaseScene(ctxLeft, false);
+        // 右侧基于左侧再修改
+        drawBaseScene(ctxRight, false);
+        currentDifferences = applyRandomDifferences(ctxRight);
+        found = new Array(currentDifferences.length).fill(false);
+        foundCount = 0;
+        document.getElementById('foundCount').innerText = foundCount;
+        // 清除标记
+        redrawMarks();
+    }
+
+    function redrawMarks() {
+        // 重新绘制左侧（不覆盖差异标记，只显示红色圆圈）
+        drawBaseScene(ctxLeft, false);
+        for(let i=0;i<currentDifferences.length;i++) {
+            if(found[i]) {
+                ctxLeft.beginPath();
+                ctxLeft.arc(currentDifferences[i].x, currentDifferences[i].y, 15, 0, 2*Math.PI);
+                ctxLeft.strokeStyle = "red";
+                ctxLeft.lineWidth = 3;
+                ctxLeft.stroke();
+                ctxLeft.fillStyle = "rgba(255,0,0,0.3)";
+                ctxLeft.fill();
+            }
+        }
+    }
+
+    function checkDiff(e) {
+        const rect = canvasLeft.getBoundingClientRect();
+        const scaleX = canvasLeft.width / rect.width;
+        const scaleY = canvasLeft.height / rect.height;
+        let clientX, clientY;
+        if(e.touches) {
+            clientX = e.touches[0].clientX;
+            clientY = e.touches[0].clientY;
+        } else {
+            clientX = e.clientX;
+            clientY = e.clientY;
+        }
+        const x = (clientX - rect.left) * scaleX;
+        const y = (clientY - rect.top) * scaleY;
+        // 寻找最近的差异点
+        let minDist = 25;
+        let idx = -1;
+        for(let i=0;i<currentDifferences.length;i++) {
+            if(found[i]) continue;
+            const dx = currentDifferences[i].x - x;
+            const dy = currentDifferences[i].y - y;
+            const dist = Math.sqrt(dx*dx+dy*dy);
+            if(dist < minDist) {
+                minDist = dist;
+                idx = i;
+            }
+        }
+        if(idx !== -1 && !found[idx]) {
+            found[idx] = true;
+            foundCount++;
+            document.getElementById('foundCount').innerText = foundCount;
+            redrawMarks();
+            speakMessage("找到一处不同！");
+            if(foundCount === currentDifferences.length) {
+                setTimeout(() => {
+                    alert("🎉 太棒了！你找出了全部不同！");
+                    speakMessage("恭喜你完成了找不同挑战！");
+                }, 100);
+            }
+        } else if(idx === -1) {
+            speakMessage("再仔细看看，这里没有不同哦");
+        }
+    }
+
+    const canvasLeft = document.getElementById('canvasLeft');
+    const canvasRight = document.getElementById('canvasRight');
+    ctxLeft = canvasLeft.getContext('2d');
+    ctxRight = canvasRight.getContext('2d');
+    canvasLeft.addEventListener('click', checkDiff);
+    canvasLeft.addEventListener('touchstart', checkDiff);
+    document.getElementById('resetBtn').addEventListener('click', () => {
+        generateNewScene();
+        speakMessage("新的一幅图，找出所有不同吧！");
+    });
+    function speakMessage(text) {
+        fetch('/api/speak',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text})}).catch(e=>console.log);
+    }
+    generateNewScene();
+    speakMessage("找出左右两幅图中不同的地方，点击左侧图片标记。");
+</script>
+<script src="/frontend/rest_check.js"></script>
+</body>
+</html>

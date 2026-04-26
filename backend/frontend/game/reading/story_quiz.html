@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>故事理解 - 小智乐园</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Comic Neue', cursive; }
+        body { background: #F0F7FF; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .container { max-width: 800px; width: 100%; background: white; border-radius: 40px; padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        .back-btn { background: #E8A735; color: white; border: none; padding: 8px 20px; border-radius: 30px; cursor: pointer; margin-bottom: 20px; font-weight: bold; }
+        .story-box { background: #FFF9E8; border-radius: 30px; padding: 20px; margin-bottom: 30px; border-left: 10px solid #E8A735; }
+        .story-title { font-size: 1.8rem; color: #5D4037; margin-bottom: 15px; }
+        .story-text { font-size: 1rem; line-height: 1.6; color: #333; }
+        .question-area { margin: 20px 0; }
+        .quiz-question { background: #F3F1E0; border-radius: 24px; padding: 20px; margin-bottom: 20px; transition: 0.2s; }
+        .quiz-question.correct { background: #C8E6C9; border-left: 8px solid #4CAF50; }
+        .quiz-question.incorrect { background: #FFCDD2; border-left: 8px solid #F44336; }
+        .options { display: flex; flex-wrap: wrap; gap: 12px; margin: 15px 0; }
+        .option { background: white; border: 2px solid #E8A735; border-radius: 40px; padding: 8px 18px; cursor: pointer; transition: 0.1s; }
+        .option.selected { background: #E8A735; color: white; border-color: white; }
+        .submit-btn { background: #4CAF50; color: white; border: none; padding: 12px 24px; border-radius: 40px; font-size: 1.1rem; cursor: pointer; margin-top: 10px; }
+        .result { margin-top: 20px; font-size: 1.2rem; font-weight: bold; text-align: center; background: #FFF9C4; border-radius: 30px; padding: 12px; }
+        .explanation { background: #E3F2FD; border-radius: 20px; padding: 15px; margin-top: 15px; text-align: left; font-size: 0.9rem; color: #0D47A1; }
+        .next-btn { background: #E8A735; border: none; padding: 10px 20px; border-radius: 30px; cursor: pointer; margin-top: 15px; }
+        @media (max-width: 600px) { .story-title { font-size: 1.4rem; } }
+    </style>
+</head>
+<body>
+    <script src="/frontend/distance_check.js"></script>
+<div class="container">
+    <button class="back-btn" onclick="location.href='/game/reading'">← 返回阅读分类</button>
+    <div class="story-box">
+        <div class="story-title">🐜 蚂蚁和蝉</div>
+        <div class="story-text">夏天的时候，蚂蚁们辛勤地储存粮食，而蝉却整天唱歌玩耍。冬天来了，蚂蚁有足够的食物，蝉却饿得发抖，去向蚂蚁求助。蚂蚁问：“夏天你为什么不存粮食呢？”蝉说：“我忙着唱歌。”蚂蚁回答：“既然你夏天唱歌，那冬天就跳舞吧！”</div>
+    </div>
+    <div id="quizContainer"></div>
+    <div class="result" id="resultMsg" style="display:none;"></div>
+    <div class="explanation" id="explanationArea" style="display:none;"></div>
+    <button class="next-btn" id="nextBtn" onclick="resetQuiz()" style="display:none;">📖 再来一篇</button>
+</div>
+<script>
+    const questions = [
+        { text: "夏天蚂蚁们在做什么？", options: ["唱歌", "玩耍", "储存粮食", "跳舞"], correct: 2, explanation: "故事中说：蚂蚁们辛勤地储存粮食。所以答案是储存粮食。" },
+        { text: "蝉冬天为什么没有食物？", options: ["找不到食物", "生病了", "夏天没有储存粮食", "被抢走了"], correct: 2, explanation: "蝉夏天只顾唱歌玩耍，没有储存粮食，所以冬天没东西吃。" },
+        { text: "故事告诉我们什么道理？", options: ["要勤劳", "要会唱歌", "冬天很冷", "蚂蚁很小气"], correct: 0, explanation: "这则寓言告诫我们要勤劳，不能像蝉一样只顾享乐，否则会挨饿。" }
+    ];
+    let userAnswers = [null, null, null];
+    let quizSubmitted = false;
+
+    function renderQuiz() {
+        let html = '';
+        questions.forEach((q, idx) => {
+            const isCorrectAfterSubmit = quizSubmitted && userAnswers[idx] === q.correct;
+            const isIncorrectAfterSubmit = quizSubmitted && userAnswers[idx] !== null && userAnswers[idx] !== q.correct;
+            let extraClass = '';
+            if(quizSubmitted && isCorrectAfterSubmit) extraClass = 'correct';
+            if(quizSubmitted && isIncorrectAfterSubmit) extraClass = 'incorrect';
+            html += `<div class="quiz-question ${extraClass}" id="q_${idx}"><strong>${idx+1}. ${q.text}</strong><div class="options">`;
+            q.options.forEach((opt, optIdx) => {
+                const isSelected = (userAnswers[idx] === optIdx);
+                let disabledAttr = quizSubmitted ? 'disabled' : '';
+                let styleClass = '';
+                if(quizSubmitted && optIdx === q.correct) styleClass = 'style="background:#4CAF50; color:white; border-color:#2E7D32;"';
+                else if(quizSubmitted && isSelected && optIdx !== q.correct) styleClass = 'style="background:#F44336; color:white; border-color:#B71C1C;"';
+                html += `<span class="option ${isSelected ? 'selected' : ''}" data-q="${idx}" data-opt="${optIdx}" ${disabledAttr} ${styleClass}>${String.fromCharCode(65+optIdx)}. ${opt}</span>`;
+            });
+            html += `</div>`;
+            if(quizSubmitted && userAnswers[idx] !== null && userAnswers[idx] !== q.correct) {
+                html += `<div style="font-size:0.85rem; margin-top:8px; color:#B71C1C;">❌ 正确答案是：${String.fromCharCode(65+q.correct)}. ${q.options[q.correct]}<br>📖 解析：${q.explanation}</div>`;
+            } else if(quizSubmitted && userAnswers[idx] === q.correct) {
+                html += `<div style="font-size:0.85rem; margin-top:8px; color:#2E7D32;">✅ 回答正确！ ${q.explanation}</div>`;
+            }
+            html += `</div>`;
+        });
+        if(!quizSubmitted) html += `<button class="submit-btn" id="submitQuiz">📖 提交答案</button>`;
+        document.getElementById('quizContainer').innerHTML = html;
+        if(!quizSubmitted) {
+            document.querySelectorAll('.option').forEach(opt => {
+                opt.addEventListener('click', (e) => {
+                    if(quizSubmitted) return;
+                    const qIdx = parseInt(opt.dataset.q);
+                    const optIdx = parseInt(opt.dataset.opt);
+                    userAnswers[qIdx] = optIdx;
+                    renderQuiz();
+                });
+            });
+            document.getElementById('submitQuiz')?.addEventListener('click', checkAnswers);
+        }
+    }
+
+    function checkAnswers() {
+        if(quizSubmitted) return;
+        let score = 0;
+        questions.forEach((q, idx) => {
+            if(userAnswers[idx] === q.correct) score++;
+        });
+        quizSubmitted = true;
+        const resultMsg = score === questions.length ? "🎉 太棒了！全对！你真是个爱思考的小读者！" : `📊 你答对了 ${score}/${questions.length} 题。点击下方“再来一篇”可以重新挑战。`;
+        document.getElementById('resultMsg').innerHTML = resultMsg;
+        document.getElementById('resultMsg').style.display = 'block';
+        document.getElementById('nextBtn').style.display = 'block';
+        renderQuiz(); // 重新渲染显示对错和解析
+        speakMessage(resultMsg);
+    }
+
+    function resetQuiz() {
+        userAnswers = [null, null, null];
+        quizSubmitted = false;
+        document.getElementById('resultMsg').style.display = 'none';
+        document.getElementById('nextBtn').style.display = 'none';
+        renderQuiz();
+        speakMessage("新的一篇故事来啦，仔细阅读后回答问题吧！");
+    }
+
+    // 语音
+    let speechQueue = [];
+    let isProcessingQueue = false;
+    function stopAllSpeech() { speechQueue = []; isProcessingQueue = false; fetch('/api/stop_speak',{method:'POST'}).catch(e=>console.log); }
+    function speakMessage(text) { if(!text) return; stopAllSpeech(); speechQueue.push(text.trim()); processSpeechQueue(); }
+    function processSpeechQueue() {
+        if(isProcessingQueue) return;
+        if(speechQueue.length===0) return;
+        isProcessingQueue=true;
+        const text=speechQueue.shift();
+        const duration=Math.max(800, text.length*200);
+        fetch('/api/speak',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:text})})
+            .then(()=>{ setTimeout(()=>{ isProcessingQueue=false; processSpeechQueue(); }, duration); })
+            .catch(()=>{ isProcessingQueue=false; processSpeechQueue(); });
+    }
+
+    renderQuiz();
+    speakMessage("读一读蚂蚁和蝉的故事，然后回答问题吧！");
+</script>
+<script src="/frontend/rest_check.js"></script>
+</body>
+</html>

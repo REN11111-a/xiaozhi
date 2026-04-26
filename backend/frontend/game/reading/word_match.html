@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>识字配对 - 小智乐园</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { background: #F0F7FF; font-family: 'Comic Neue', cursive; display: flex; justify-content: center; padding: 20px; }
+        .container { max-width: 800px; width: 100%; background: white; border-radius: 40px; padding: 30px; text-align: center; }
+        .back-btn { background: #E8A735; border: none; padding: 8px 20px; border-radius: 30px; cursor: pointer; margin-bottom: 20px; }
+        h2 { color: #5D4037; margin-bottom: 10px; }
+        .status { font-size: 1.2rem; margin: 15px 0; }
+        .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin: 20px 0; }
+        .card { background: #E8A735; border-radius: 20px; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; font-weight: bold; cursor: pointer; transition: 0.2s; color: white; box-shadow: 0 5px 0 #b97f10; }
+        .card.flipped, .card.matched { background: #A5D6A7; color: #333; transform: scale(0.98); box-shadow: none; cursor: default; }
+        .card.matched { opacity: 0.7; }
+        .reset-btn { background: #4CAF50; border: none; padding: 10px 25px; border-radius: 40px; font-size: 1rem; cursor: pointer; margin-top: 20px; }
+        @media (max-width: 600px) { .grid { gap: 8px; } .card { font-size: 1.2rem; } }
+    </style>
+</head>
+<body>
+    <script src="/frontend/distance_check.js"></script>
+<div class="container">
+    <button class="back-btn" onclick="location.href='/game/reading'">← 返回阅读分类</button>
+    <h2>🔤 识字配对</h2>
+    <p>点击卡片，配对汉字和拼音/图片</p>
+    <div class="status" id="statusMsg">配对: 0 / 6</div>
+    <div class="grid" id="gameGrid"></div>
+    <button class="reset-btn" id="resetBtn">🔄 重新开始</button>
+</div>
+<script>
+    const pairs = [
+        { word: "日", match: "rì", type: "pinyin" },
+        { word: "月", match: "yuè", type: "pinyin" },
+        { word: "山", match: "shān", type: "pinyin" },
+        { word: "水", match: "shuǐ", type: "pinyin" },
+        { word: "火", match: "huǒ", type: "pinyin" },
+        { word: "风", match: "fēng", type: "pinyin" }
+    ];
+    let cards = [];
+    for(let p of pairs) {
+        cards.push({ text: p.word, pairId: p.word, type: "word" });
+        cards.push({ text: p.match, pairId: p.word, type: "pinyin" });
+    }
+    let shuffled = [];
+    let flipped = [];
+    let matched = [];
+    let lockBoard = false;
+    let matchCount = 0;
+
+    function shuffleArray(arr) { for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; } return arr; }
+    function initGame() {
+        shuffled = shuffleArray([...cards]);
+        flipped = [];
+        matched = new Array(shuffled.length).fill(false);
+        lockBoard = false;
+        matchCount = 0;
+        document.getElementById('statusMsg').innerText = `配对: 0 / ${pairs.length}`;
+        renderGrid();
+    }
+    function renderGrid() {
+        const grid = document.getElementById('gameGrid');
+        grid.innerHTML = '';
+        for(let i=0;i<shuffled.length;i++) {
+            const card = document.createElement('div');
+            card.className = 'card';
+            if(matched[i]) { card.classList.add('matched'); card.innerText = shuffled[i].text; }
+            else if(flipped.includes(i)) { card.classList.add('flipped'); card.innerText = shuffled[i].text; }
+            else { card.innerText = '?'; }
+            card.addEventListener('click', () => flipCard(i));
+            grid.appendChild(card);
+        }
+    }
+    function flipCard(idx) {
+        if(lockBoard) return;
+        if(matched[idx]) return;
+        if(flipped.includes(idx)) return;
+        flipped.push(idx);
+        if(flipped.length === 2) {
+            lockBoard = true;
+            const [a,b] = flipped;
+            if(shuffled[a].pairId === shuffled[b].pairId) {
+                matched[a]=matched[b]=true;
+                matchCount++;
+                document.getElementById('statusMsg').innerText = `配对: ${matchCount} / ${pairs.length}`;
+                flipped = [];
+                lockBoard = false;
+                if(matchCount === pairs.length) {
+                    setTimeout(()=>{ alert("🎉 太棒了！全部配对成功！"); speakMessage("恭喜你完成了所有配对，识字小英雄！"); }, 100);
+                }
+                renderGrid();
+            } else {
+                setTimeout(() => {
+                    flipped = [];
+                    renderGrid();
+                    lockBoard = false;
+                }, 800);
+                renderGrid();
+            }
+        } else {
+            renderGrid();
+        }
+    }
+    function speakMessage(text) { fetch('/api/speak',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text})}).catch(e=>console.log); }
+    document.getElementById('resetBtn').addEventListener('click',()=>{ initGame(); speakMessage("新的一局，开始配对识字吧！"); });
+    initGame();
+    speakMessage("配对汉字和拼音，把它们连起来吧！");
+</script>
+<script src="/frontend/rest_check.js"></script>
+</body>
+</html>

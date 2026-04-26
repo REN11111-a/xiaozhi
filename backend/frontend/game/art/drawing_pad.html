@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>自由绘画板 - 小智乐园</title>
+    <style>
+        * { box-sizing: border-box; user-select: none; }
+        body { background: #F0F0E8; font-family: 'Comic Neue', cursive; display: flex; justify-content: center; padding: 20px; }
+        .container { background: white; border-radius: 40px; padding: 20px; max-width: 900px; width: 100%; box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+        .canvas-wrapper { display: flex; justify-content: center; margin-bottom: 20px; }
+        canvas { border: 3px solid #E8A735; border-radius: 20px; background: white; cursor: crosshair; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .tools { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; margin: 20px 0; align-items: center; }
+        .color-btn { width: 45px; height: 45px; border-radius: 50%; cursor: pointer; border: 2px solid #ccc; }
+        .color-btn.active { border: 4px solid gold; transform: scale(1.1); }
+        .tool-btn { background: #E8A735; border: none; padding: 8px 16px; border-radius: 30px; font-weight: bold; cursor: pointer; }
+        .range-group { display: flex; align-items: center; gap: 10px; background: #f5f5f5; padding: 5px 15px; border-radius: 40px; }
+        .back-btn { background: #E8A735; color: white; border: none; padding: 8px 20px; border-radius: 30px; cursor: pointer; margin-bottom: 15px; }
+        @media (max-width: 700px) { canvas { width: 100%; height: auto; } }
+    </style>
+</head>
+<body>
+<div class="container">
+    <button class="back-btn" onclick="location.href='/game/art'">← 返回艺术分类</button>
+    <div class="canvas-wrapper"><canvas id="drawCanvas" width="700" height="400" style="width:100%; height:auto; max-width:700px; aspect-ratio:700/400"></canvas></div>
+    <div class="tools">
+        <div id="colorRed" class="color-btn" style="background:#FF4136;"></div>
+        <div id="colorBlue" class="color-btn" style="background:#0074D9;"></div>
+        <div id="colorGreen" class="color-btn" style="background:#2ECC40;"></div>
+        <div id="colorYellow" class="color-btn" style="background:#FFDC00;"></div>
+        <div id="colorBlack" class="color-btn" style="background:#111111;"></div>
+        <div id="colorWhite" class="color-btn" style="background:#FFFFFF; border:1px solid #aaa;"></div>
+        <div class="range-group"><span>✏️ 笔刷大小</span><input type="range" id="brushSize" min="2" max="30" value="5"></div>
+        <button class="tool-btn" id="clearBtn">🧽 清空画板</button>
+        <button class="tool-btn" id="saveBtn">💾 保存图片</button>
+    </div>
+</div>
+<script src="/frontend/distance_check.js"></script>
+<script>
+    const canvas = document.getElementById('drawCanvas');
+    const ctx = canvas.getContext('2d');
+    let drawing = false;
+    let currentColor = '#FF4136';
+    let brushSize = 5;
+    function setCanvasBackground() { ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, canvas.width, canvas.height); }
+    setCanvasBackground();
+    function startDrawing(e) { drawing = true; draw(e); }
+    function endDrawing() { drawing = false; ctx.beginPath(); }
+    function draw(e) {
+        if(!drawing) return;
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        let x, y;
+        if(e.touches) {
+            x = (e.touches[0].clientX - rect.left) * scaleX;
+            y = (e.touches[0].clientY - rect.top) * scaleY;
+        } else {
+            x = (e.clientX - rect.left) * scaleX;
+            y = (e.clientY - rect.top) * scaleY;
+        }
+        ctx.lineWidth = brushSize;
+        ctx.lineCap = 'round';
+        ctx.strokeStyle = currentColor;
+        ctx.lineTo(x, y);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+    }
+    canvas.addEventListener('mousedown', startDrawing);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('mouseup', endDrawing);
+    canvas.addEventListener('touchstart', startDrawing);
+    canvas.addEventListener('touchmove', draw);
+    canvas.addEventListener('touchend', endDrawing);
+    document.querySelectorAll('.color-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            currentColor = btn.style.backgroundColor;
+            document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        });
+    });
+    document.getElementById('brushSize').addEventListener('input', (e) => { brushSize = e.target.value; });
+    document.getElementById('clearBtn').addEventListener('click', () => { setCanvasBackground(); });
+    document.getElementById('saveBtn').addEventListener('click', () => {
+        const link = document.createElement('a');
+        link.download = 'my_drawing.png';
+        link.href = canvas.toDataURL();
+        link.click();
+        speakMessage("作品已保存，你真棒！");
+    });
+    function speakMessage(text) { fetch('/api/speak',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text})}).catch(e=>console.log); }
+    document.getElementById('colorRed').classList.add('active');
+</script>
+<script src="/frontend/rest_check.js"></script>
+</body>
+</html>

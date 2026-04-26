@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>垃圾分类小卫士 - 小智乐园</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            background: #D9EAD3;
+            font-family: 'Comic Neue', cursive;
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+            margin: 0;
+        }
+        .container {
+            background: white;
+            border-radius: 48px;
+            padding: 25px;
+            max-width: 700px;
+            width: 100%;
+            text-align: center;
+        }
+        .back-btn {
+            background: #E8A735;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 40px;
+            cursor: pointer;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        h2 { color: #5D4037; margin: 10px 0; }
+        .garbage-area {
+            background: #F9F2E0;
+            border-radius: 50px;
+            padding: 30px;
+            margin: 20px 0;
+        }
+        .garbage-emoji {
+            font-size: 100px;
+            display: inline-block;
+            margin-bottom: 15px;
+        }
+        .garbage-name {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #5D4037;
+            margin-top: 10px;
+        }
+        .bins {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            margin: 25px 0;
+        }
+        .bin {
+            background: #E8A735;
+            border-radius: 30px;
+            padding: 12px 20px;
+            cursor: pointer;
+            transition: 0.1s;
+            font-weight: bold;
+            text-align: center;
+            min-width: 100px;
+        }
+        .bin:hover { background: #d18e1f; transform: scale(1.02); }
+        .bin-emoji { font-size: 2rem; display: block; }
+        .score {
+            font-size: 1.2rem;
+            background: #FFE0B2;
+            display: inline-block;
+            padding: 5px 20px;
+            border-radius: 40px;
+            margin: 10px 0;
+        }
+        .message {
+            background: #FFF9E8;
+            border-radius: 30px;
+            padding: 12px;
+            margin-top: 15px;
+            font-size: 0.95rem;
+        }
+        .next-btn {
+            background: #4CAF50;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 40px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        @media (max-width: 550px) {
+            .bin { min-width: 70px; padding: 8px 12px; }
+            .bin-emoji { font-size: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <script src="/frontend/distance_check.js"></script>
+<div class="container">
+    <button class="back-btn" onclick="location.href='/game/science'">← 返回科学分类</button>
+    <h2>♻️ 垃圾分类小卫士</h2>
+    <p>把垃圾扔进正确的垃圾桶！</p>
+    <div class="garbage-area">
+        <div class="garbage-emoji" id="garbageEmoji">🍌</div>
+        <div class="garbage-name" id="garbageName">香蕉皮</div>
+    </div>
+    <div class="bins">
+        <div class="bin" data-category="recyclable">
+            <span class="bin-emoji">♻️</span>
+            <span>可回收</span>
+        </div>
+        <div class="bin" data-category="kitchen">
+            <span class="bin-emoji">🍚</span>
+            <span>厨余垃圾</span>
+        </div>
+        <div class="bin" data-category="hazardous">
+            <span class="bin-emoji">⚠️</span>
+            <span>有害垃圾</span>
+        </div>
+        <div class="bin" data-category="other">
+            <span class="bin-emoji">🗑️</span>
+            <span>其他垃圾</span>
+        </div>
+    </div>
+    <div class="score">得分: <span id="scoreValue">0</span></div>
+    <div class="message" id="msgArea">点击垃圾桶，把垃圾正确分类！</div>
+    <button class="next-btn" id="nextBtn">🎲 下一个垃圾</button>
+</div>
+<script>
+    // 垃圾数据（可无限扩展）
+    const garbageList = [
+        { name: "香蕉皮", emoji: "🍌", category: "kitchen", explanation: "香蕉皮是厨余垃圾，可以堆肥。" },
+        { name: "报纸", emoji: "📰", category: "recyclable", explanation: "报纸是可回收物，可以再造新纸。" },
+        { name: "废电池", emoji: "🔋", category: "hazardous", explanation: "废电池含有重金属，是有害垃圾。" },
+        { name: "塑料袋", emoji: "🛍️", category: "other", explanation: "塑料袋是其他垃圾，不易降解。" },
+        { name: "玻璃瓶", emoji: "🍾", category: "recyclable", explanation: "玻璃瓶可以回收再利用。" },
+        { name: "剩菜剩饭", emoji: "🍲", category: "kitchen", explanation: "剩菜剩饭属于厨余垃圾。" },
+        { name: "过期药品", emoji: "💊", category: "hazardous", explanation: "过期药品是有害垃圾，需特殊处理。" },
+        { name: "卫生纸", emoji: "🧻", category: "other", explanation: "卫生纸被污染，属于其他垃圾。" },
+        { name: "易拉罐", emoji: "🥫", category: "recyclable", explanation: "易拉罐是金属可回收物。" },
+        { name: "鸡蛋壳", emoji: "🥚", category: "kitchen", explanation: "鸡蛋壳是厨余垃圾。" },
+        { name: "废灯管", emoji: "💡", category: "hazardous", explanation: "废灯管含汞，是有害垃圾。" },
+        { name: "旧衣服", emoji: "👕", category: "recyclable", explanation: "旧衣服可回收再利用。" },
+        { name: "一次性餐具", emoji: "🥢", category: "other", explanation: "一次性餐具是其他垃圾。" },
+        { name: "果核", emoji: "🍑", category: "kitchen", explanation: "果核是厨余垃圾。" }
+    ];
+
+    let currentGarbage = null;
+    let score = 0;
+    let answered = false;
+
+    function getRandomGarbage() {
+        const randomIndex = Math.floor(Math.random() * garbageList.length);
+        return { ...garbageList[randomIndex] };
+    }
+
+    function loadNewGarbage() {
+        currentGarbage = getRandomGarbage();
+        answered = false;
+        document.getElementById('garbageEmoji').innerHTML = currentGarbage.emoji;
+        document.getElementById('garbageName').innerHTML = currentGarbage.name;
+        document.getElementById('msgArea').innerHTML = "点击正确的垃圾桶分类！";
+        // 移除所有垃圾桶的临时样式
+        document.querySelectorAll('.bin').forEach(bin => {
+            bin.style.opacity = "1";
+        });
+        speakMessage(`这是什么垃圾？请把它放进正确的垃圾桶。`);
+    }
+
+    function checkCategory(selectedCategory) {
+        if (answered) {
+            speakMessage("已经分类过了，点击“下一个垃圾”继续挑战吧！");
+            return;
+        }
+        const isCorrect = (selectedCategory === currentGarbage.category);
+        if (isCorrect) {
+            score += 10;
+            document.getElementById('scoreValue').innerText = score;
+            document.getElementById('msgArea').innerHTML = `✅ 正确！${currentGarbage.name} 属于 ${getCategoryName(currentGarbage.category)}。${currentGarbage.explanation}`;
+            speakMessage(`正确！${currentGarbage.name}是${getCategoryName(currentGarbage.category)}。加十分！`);
+            answered = true;
+        } else {
+            const correctName = getCategoryName(currentGarbage.category);
+            document.getElementById('msgArea').innerHTML = `❌ 错误！${currentGarbage.name} 不属于 ${getCategoryName(selectedCategory)}，应该属于 ${correctName}。${currentGarbage.explanation}`;
+            speakMessage(`不对哦，${currentGarbage.name}应该放在${correctName}。`);
+            answered = true;
+            // 可以扣分或保持分数不变，这里不扣分只提示
+        }
+        // 高亮正确垃圾桶（可选）
+        highlightCorrectBin();
+    }
+
+    function getCategoryName(cat) {
+        const map = {
+            recyclable: "可回收垃圾",
+            kitchen: "厨余垃圾",
+            hazardous: "有害垃圾",
+            other: "其他垃圾"
+        };
+        return map[cat];
+    }
+
+    function highlightCorrectBin() {
+        document.querySelectorAll('.bin').forEach(bin => {
+            if (bin.dataset.category === currentGarbage.category) {
+                bin.style.backgroundColor = "#4CAF50";
+                bin.style.color = "white";
+                setTimeout(() => {
+                    bin.style.backgroundColor = "#E8A735";
+                    bin.style.color = "black";
+                }, 1500);
+            } else {
+                bin.style.opacity = "0.6";
+                setTimeout(() => {
+                    bin.style.opacity = "1";
+                }, 1500);
+            }
+        });
+    }
+
+    function nextGarbage() {
+        loadNewGarbage();
+    }
+
+    function speakMessage(text) {
+        fetch('/api/speak', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: text })
+        }).catch(e => console.log);
+    }
+
+    // 绑定垃圾桶点击事件
+    document.querySelectorAll('.bin').forEach(bin => {
+        bin.addEventListener('click', () => {
+            const category = bin.dataset.category;
+            checkCategory(category);
+        });
+    });
+
+    document.getElementById('nextBtn').addEventListener('click', nextGarbage);
+
+    // 初始化
+    loadNewGarbage();
+    speakMessage("欢迎来到垃圾分类小卫士！把垃圾放进正确的垃圾桶，学习环保知识！");
+</script>
+<script src="/frontend/rest_check.js"></script>
+</body>
+</html>

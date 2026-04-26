@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>乘法记忆赛 - 小智乐园</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { background: #F0F0E8; font-family: 'Comic Neue', cursive; display: flex; justify-content: center; padding: 20px; }
+        .container { max-width: 700px; width: 100%; background: white; border-radius: 40px; padding: 30px; text-align: center; }
+        .back-btn { background: #E8A735; border: none; padding: 8px 20px; border-radius: 30px; cursor: pointer; margin-bottom: 20px; font-weight: bold; }
+        .score-board { font-size: 1.3rem; background: #FFF2E6; display: inline-block; padding: 8px 20px; border-radius: 40px; margin: 15px 0; }
+        .question-area { background: #F9F3E3; padding: 30px; border-radius: 50px; margin: 20px 0; }
+        .math-question { font-size: 3rem; font-weight: bold; margin: 20px 0; }
+        .answer-input { font-size: 1.8rem; padding: 10px 20px; width: 200px; text-align: center; border: 2px solid #E8A735; border-radius: 50px; font-family: monospace; }
+        .submit-btn { background: #4CAF50; color: white; border: none; padding: 12px 30px; border-radius: 40px; font-size: 1.2rem; margin: 15px; cursor: pointer; }
+        .feedback { font-size: 1.2rem; margin: 15px 0; min-height: 60px; }
+        @media (max-width: 600px) { .math-question { font-size: 2rem; } .answer-input { width: 150px; font-size: 1.4rem; } }
+    </style>
+</head>
+<body>
+<div class="container">
+    <button class="back-btn" onclick="location.href='/game/math_quiz'">← 返回数学探险岛</button>
+    <h2>✖️ 乘法记忆赛</h2>
+    <p>测试你的乘法表功力！</p>
+    <div class="score-board">🏆 得分: <span id="score">0</span></div>
+    <div class="question-area">
+        <div class="math-question" id="question">6 × 7 = ?</div>
+        <input type="number" id="answer" class="answer-input" placeholder="?" inputmode="numeric">
+        <div><button class="submit-btn" id="submitBtn">✓ 作答</button></div>
+        <div class="feedback" id="feedback"></div>
+    </div>
+</div>
+<script src="/frontend/distance_check.js"></script>
+<script>
+    let currentQuestion = { text: "", answer: 0 };
+    let score = 0;
+    const scoreSpan = document.getElementById('score');
+    const questionDiv = document.getElementById('question');
+    const answerInput = document.getElementById('answer');
+    const feedbackDiv = document.getElementById('feedback');
+
+    function speakMessage(text) {
+        fetch('/api/speak', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text }) }).catch(e => console.log);
+    }
+
+    function generateQuestion() {
+        let a = Math.floor(Math.random() * 12) + 1;
+        let b = Math.floor(Math.random() * 12) + 1;
+        return { text: `${a} × ${b}`, answer: a * b };
+    }
+
+    function refreshQuestion() {
+        currentQuestion = generateQuestion();
+        questionDiv.innerText = currentQuestion.text + " = ?";
+        answerInput.value = '';
+        feedbackDiv.innerText = '';
+    }
+
+    function updateScoreUI() {
+        scoreSpan.innerText = score;
+    }
+
+    function handleSubmit() {
+        const userAns = parseInt(answerInput.value.trim());
+        if (isNaN(userAns)) {
+            feedbackDiv.innerText = "📝 输入数字答案！";
+            speakMessage("请输入数字答案");
+            return;
+        }
+        if (userAns === currentQuestion.answer) {
+            score++;
+            updateScoreUI();
+            feedbackDiv.innerHTML = "🎉 乘法大师！ +1分 🎉";
+            speakMessage("完全正确，乘法小英雄！");
+            refreshQuestion();
+        } else {
+            feedbackDiv.innerHTML = `❌ 可惜，正确答案是 ${currentQuestion.answer}，再来一题！`;
+            speakMessage(`正确答案是 ${currentQuestion.answer}，继续努力`);
+            refreshQuestion();
+        }
+    }
+
+    document.getElementById('submitBtn').addEventListener('click', handleSubmit);
+    answerInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleSubmit(); });
+
+    function init() {
+        score = 0;
+        updateScoreUI();
+        refreshQuestion();
+        feedbackDiv.innerText = "✖️ 挑战你的乘法表！";
+        speakMessage("乘法记忆赛开始，快速回答乘法题吧！");
+    }
+    init();
+</script>
+<script src="/frontend/rest_check.js"></script>
+</body>
+</html>
