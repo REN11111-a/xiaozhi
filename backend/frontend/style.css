@@ -1,0 +1,335 @@
+/* 护眼主题 - 暖色柔和不刺眼 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', '微软雅黑', 'PingFang SC', Arial, sans-serif;
+    background: #F5E6D3;  /* 暖米色背景 */
+    color: #4A3728;
+    line-height: 1.6;
+    padding: 20px;
+    min-height: 100vh;
+}
+
+/* 暖光护眼遮罩 */
+.warm-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    background: rgba(255, 200, 100, 0.15);
+    z-index: 999;
+    transition: opacity 0.3s;
+}
+
+/* 模态框 */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: #FFF8F0;
+    border-radius: 30px;
+    padding: 30px;
+    text-align: center;
+    max-width: 320px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+}
+
+.modal-icon {
+    font-size: 60px;
+    margin-bottom: 15px;
+}
+
+.modal-content h2 {
+    color: #E8A735;
+    margin-bottom: 10px;
+}
+
+.modal-content p {
+    color: #6B5B4F;
+    margin-bottom: 20px;
+}
+
+.rest-timer {
+    font-size: 24px;
+    font-weight: bold;
+    color: #FF6B6B;
+    margin: 15px 0;
+}
+
+.modal-content button {
+    background: #E8A735;
+    color: white;
+    border: none;
+    padding: 12px 30px;
+    border-radius: 50px;
+    font-size: 16px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+/* 主容器 */
+.container {
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+/* 头部 */
+header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.robot-icon {
+    font-size: 40px;
+}
+
+header h1 {
+    font-size: 22px;
+    color: #E8A735;
+}
+
+.icon-btn {
+    background: #E8D5B7;
+    border: none;
+    font-size: 24px;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.icon-btn:hover {
+    background: #D4B896;
+    transform: scale(1.05);
+}
+
+/* 机器人状态 */
+.robot-status {
+    background: white;
+    border-radius: 30px;
+    padding: 20px;
+    text-align: center;
+    margin-bottom: 20px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+}
+
+.face {
+    font-size: 70px;
+    margin-bottom: 10px;
+}
+
+.mood {
+    font-size: 18px;
+    color: #E8A735;
+    font-weight: bold;
+}
+
+.message {
+    font-size: 16px;
+    color: #6B5B4F;
+    margin-top: 10px;
+}
+
+/* 摄像头区域 */
+.camera-container {
+    position: relative;
+    background: #D4B896;
+    border-radius: 20px;
+    overflow: hidden;
+    margin-bottom: 20px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.camera-container img {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.detection-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(transparent, rgba(0,0,0,0.7));
+    padding: 15px;
+    text-align: center;
+}
+
+#detected-text {
+    color: white;
+    font-size: 16px;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+}
+
+/* 按钮 */
+.controls {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 14px;
+    border: none;
+    border-radius: 50px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.btn-primary {
+    background: #E8A735;
+    color: white;
+    box-shadow: 0 4px 0 #B8860B;
+}
+
+.btn-primary:active {
+    transform: translateY(2px);
+    box-shadow: 0 2px 0 #B8860B;
+}
+
+.btn-secondary {
+    background: #E8D5B7;
+    color: #4A3728;
+}
+
+.btn-secondary:active {
+    transform: scale(0.98);
+}
+
+.btn-icon {
+    font-size: 20px;
+}
+
+/* 聊天区域 */
+.chat-area {
+    background: white;
+    border-radius: 20px;
+    overflow: hidden;
+    margin-bottom: 15px;
+}
+
+.chat-header {
+    background: #E8D5B7;
+    padding: 12px 15px;
+    font-weight: bold;
+    color: #4A3728;
+}
+
+.chat-messages {
+    height: 200px;
+    overflow-y: auto;
+    padding: 15px;
+}
+
+.message {
+    margin-bottom: 12px;
+    padding: 8px 12px;
+    border-radius: 15px;
+    max-width: 85%;
+    font-size: 14px;
+}
+
+.message.robot {
+    background: #F5E6D3;
+    color: #4A3728;
+    border-bottom-left-radius: 5px;
+}
+
+.message.user {
+    background: #E8A735;
+    color: white;
+    margin-left: auto;
+    border-bottom-right-radius: 5px;
+}
+
+/* 家长提示 */
+.parent-tip {
+    text-align: center;
+    font-size: 12px;
+    color: #A0886E;
+    padding: 10px;
+}
+
+/* 滚动条 */
+::-webkit-scrollbar {
+    width: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: #E8D5B7;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #E8A735;
+    border-radius: 10px;
+}
+
+/* 字体柔和 */
+body, button, input, textarea {
+    font-family: 'Segoe UI', '微软雅黑', 'PingFang SC', Arial, sans-serif;
+    font-weight: 400;
+}
+
+/* 答案弹窗动画 */
+@keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+#answer-modal div {
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* 重置按钮样式 */
+.btn-reset {
+    background: #FF6B6B;
+    color: white;
+    box-shadow: 0 4px 0 #CC5555;
+}
+
+.btn-reset:active {
+    transform: translateY(2px);
+    box-shadow: 0 2px 0 #CC5555;
+}
+.btn-game {
+    background-color: #4CAF50;
+    color: white;
+}
+.btn-game:hover {
+    background-color: #45a049;
+}
+.robot-avatar {
+    transition: transform 0.3s ease;
+}
+.robot-avatar:hover {
+    transform: scale(1.05) rotate(5deg);
+}

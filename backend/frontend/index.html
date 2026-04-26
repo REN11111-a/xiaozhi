@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>小智 - 儿童启蒙机器人</title>
+    <link rel="stylesheet" href="/frontend/style.css">
+    <script src="/frontend/story.js"></script>
+    <script src="/frontend/riddle.js"></script>
+     <!-- 新增：对齐游戏分类页的样式 -->
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            background: #F0F7FF;
+            font-family: 'Comic Neue', 'Segoe UI', cursive, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        /* 1. 顶部导航栏（对齐游戏页） */
+        .game-header {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: white;
+            padding: 10px 25px;
+            border-radius: 60px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            margin-bottom: 30px;
+        }
+        .back-home {
+            background: #E8A735;
+            color: white;
+            text-decoration: none;
+            padding: 8px 20px;
+            border-radius: 40px;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+        .back-home:hover {
+            background: #d18e1f;
+        }
+        /* 2. 小智欢迎区（完全复用游戏页） */
+        .robot-welcome {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        .robot-avatar {
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            background: white;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.08);
+            overflow: hidden;
+            border: 4px solid #E8A735;
+        }
+        .robot-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .robot-greeting {
+            background: white;
+            padding: 20px 30px;
+            border-radius: 30px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            max-width: 500px;
+        }
+        .robot-greeting h2 {
+            color: #E8A735;
+            margin: 0 0 8px;
+            font-size: 1.8rem;
+        }
+        .robot-greeting p {
+            color: #7F6B5C;
+            margin: 0;
+            font-size: 1.1rem;
+        }
+        /* 3. 通用卡片样式（所有模块用白色圆角卡片） */
+        .card {
+            background: white;
+            border-radius: 35px;
+            padding: 25px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+            border: 1px solid rgba(232, 167, 53, 0.2);
+            margin-bottom: 25px;
+        }
+        /* 4. 机器人状态区样式 */
+        .robot-status {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            text-align: center;
+        }
+        .face {
+            font-size: 4rem;
+        }
+        .mood {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #4A3728;
+        }
+        .message {
+            font-size: 1.2rem;
+            color: #7F6B5C;
+            max-width: 80%;
+        }
+        /* 5. 控制按钮区（网格布局，对齐游戏页卡片） */
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+        .btn {
+            background: white;
+            border: none;
+            border-radius: 35px;
+            padding: 20px 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+            border: 1px solid rgba(232, 167, 53, 0.2);
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #4A3728;
+            font-family: inherit;
+        }
+        .btn:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 30px rgba(0,0,0,0.1);
+            border-color: #E8A735;
+        }
+        .btn-primary {
+            background: #E8A735;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #d18e1f;
+        }
+        .btn-icon {
+            font-size: 2rem;
+            display: block;
+            margin-bottom: 8px;
+        }
+        /* 6. 聊天区域样式 */
+        .chat-area {
+            background: white;
+            border-radius: 35px;
+            padding: 20px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+            border: 1px solid rgba(232, 167, 53, 0.2);
+            margin-bottom: 25px;
+        }
+        .chat-header {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #E8A735;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .chat-messages {
+            max-height: 300px;
+            overflow-y: auto;
+            padding: 10px;
+        }
+        .message {
+            padding: 12px 18px;
+            border-radius: 20px;
+            margin-bottom: 10px;
+            max-width: 80%;
+        }
+        .message.robot {
+            background: #F0F7FF;
+            align-self: flex-start;
+        }
+        /* 7. 摄像头区域样式 */
+        .camera-container {
+            background: white;
+            border-radius: 35px;
+            padding: 20px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+            border: 1px solid rgba(232, 167, 53, 0.2);
+            margin-bottom: 25px;
+            text-align: center;
+        }
+        #video-feed {
+            border-radius: 20px;
+            max-width: 100%;
+        }
+        /* 8. 家长提示 */
+        .parent-tip {
+            text-align: center;
+            color: #B0A090;
+            font-size: 0.9rem;
+            margin-top: 20px;
+        }
+        /* 9. 距离警告弹窗 */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 35px;
+            text-align: center;
+            max-width: 400px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .modal-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+        .modal-content h2 {
+            color: #E8A735;
+            margin: 0 0 10px;
+        }
+        .modal-content button {
+            background: #E8A735;
+            color: white;
+            border: none;
+            padding: 10px 30px;
+            border-radius: 40px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        .modal-content button:hover {
+            background: #d18e1f;
+        }
+        /* 10. 护眼模式遮罩 */
+        .warm-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 245, 230, 0.3);
+            pointer-events: none;
+            z-index: 9998;
+            display: none;
+        }
+        /* 11. 响应式适配（完全复用游戏页） */
+        @media (max-width: 600px) {
+            .controls {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 15px;
+            }
+            .robot-avatar {
+                width: 140px;
+                height: 140px;
+            }
+            .robot-greeting h2 {
+                font-size: 1.5rem;
+            }
+            .face {
+                font-size: 3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 护眼模式遮罩 -->
+    <div id="warm-overlay" class="warm-overlay"></div>
+    
+    <!-- 距离警告弹窗 -->
+    <div id="distance-modal" class="modal distance-modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-icon">👀</div>
+            <h2>离屏幕太近啦！</h2>
+            <p id="distance-modal-text">请后退一点，保护小眼睛~</p>
+            <button onclick="closeDistanceWarning()">知道啦</button>
+        </div>
+    </div>
+    
+    <div class="container">
+        <!-- 顶部导航栏 -->
+        <div class="game-header">
+            <div style="font-size: 1.2rem;">🤖 小智启蒙机器人</div>
+        </div>
+
+        <!-- 小智欢迎区 -->
+        <div class="robot-welcome">
+            <!-- 提示文字放在左边 -->
+            <div style="display: inline-block; background: rgba(232,167,53,0.15); padding: 8px 18px; border-radius: 30px; font-size: 14px; color: #E8A735; font-weight: bold;">
+                💬 点击头像与我互动
+            </div>
+            
+            <!-- 小智头像 -->
+            <div class="robot-avatar" onclick="location.href='/ai'" style="cursor: pointer;">
+                <img src="/frontend/xiaozhi.png" alt="小智">
+            </div>
+            
+            <!-- 问候语 -->
+            <div class="robot-greeting">
+                <h2>👋 嗨！我是小智</h2>
+                <p>你好呀！我是小智，让我陪你一起学习吧~</p>
+            </div>
+        </div>
+
+        <!-- 聊天区域 -->
+        <div class="chat-area">
+            <div class="chat-header">💬 聊天记录</div>
+            <div class="chat-messages" id="chat-messages">
+            </div>
+        </div>
+        
+        <!-- 摄像头区域 -->
+        <div class="camera-container" id="camera-container" style="display: none;">
+            <img id="video-feed" src="/video_feed" alt="摄像头画面">
+            <div class="detection-overlay" id="detection-overlay">
+                <span id="detected-text">识别中...</span>
+            </div>
+        </div>
+        
+        <!-- 控制按钮 -->
+        <div class="controls">
+            <button class="btn btn-primary" onclick="speak()">
+                <span class="btn-icon">🎤</span> 语音对话
+            </button>
+            <button class="btn btn-secondary" onclick="tellStory()">
+                <span class="btn-icon">📖</span> 讲故事
+            </button>
+            <button class="btn btn-secondary" onclick="playGame()">
+                <span class="btn-icon">🎮</span> 猜谜语
+            </button>
+            <button class="btn btn-secondary" onclick="learnObject()">
+                <span class="btn-icon">🔍</span> 认识物品
+            </button>
+            <button class="btn btn-reset" onclick="resetAll()">
+                <span class="btn-icon">🔄</span> 重置
+            </button>
+            <button class="btn btn-game" onclick="location.href='/games'">
+                <span class="btn-icon">🎮</span> 儿童游戏
+            </button>
+        </div>
+        
+        <!-- 家长提示 -->
+        <div class="parent-tip">
+            💡 提示：机器人会15分钟提醒休息，离太近会自动警告
+        </div>
+    </div>
+    
+    <script src="/frontend/script.js"></script>
+    <!-- 统一休息检测模块 -->
+    <script src="/frontend/rest_check.js"></script>
+</body>
+</html>

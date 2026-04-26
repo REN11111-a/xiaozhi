@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>3D数字人 - 智能机器人</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Microsoft YaHei', sans-serif;
+        }
+
+        /* 控制面板 - 悬浮在右下角 */
+        .control-panel {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(8px);
+            padding: 12px 20px;
+            border-radius: 40px;
+            display: flex;
+            gap: 12px;
+            z-index: 100;
+            border: 1px solid rgba(255,255,255,0.2);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        button {
+            background: #4CAF50;
+            border: none;
+            color: white;
+            padding: 8px 18px;
+            border-radius: 30px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: bold;
+            letter-spacing: 1px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        button:hover {
+            transform: scale(1.05);
+            background: #45a049;
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        /* 状态信息栏 - 加载完成后自动隐藏 */
+        .info-bar {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(5px);
+            padding: 10px 20px;
+            border-radius: 30px;
+            color: white;
+            font-size: 14px;
+            z-index: 100;
+            pointer-events: none;
+            font-family: monospace;
+            border-left: 4px solid #4CAF50;
+            transition: opacity 0.5s ease;
+        }
+        
+        .info-bar.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        /* 返回按钮 */
+        .back-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(232, 167, 53, 0.9);
+            border: none;
+            padding: 8px 18px;
+            border-radius: 40px;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            z-index: 101;
+            transition: 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .back-btn:hover {
+            background: #d18e1f;
+            transform: scale(1.02);
+        }
+
+        /* 提示语 */
+        .tip {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0,0,0,0.5);
+            padding: 5px 12px;
+            border-radius: 20px;
+            color: #ccc;
+            font-size: 12px;
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        @media (max-width: 600px) {
+            button { padding: 6px 12px; font-size: 12px; }
+            .control-panel { gap: 8px; padding: 8px 15px; }
+            .info-bar { font-size: 10px; top: 10px; left: 10px; }
+            .back-btn { top: 10px; right: 10px; padding: 6px 12px; font-size: 12px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- 返回按钮 -->
+    <a href="/" class="back-btn">← 返回</a>
+    
+    <div class="info-bar" id="infoBar">
+        🤖 数字人加载中... 
+    </div>
+    <div class="control-panel" id="controlPanel" style="display: none;">
+        <button id="btnIdle">🧘 待机</button>
+        <button id="btnWave">👋 挥手</button>
+        <button id="btnRun">🏃 奔跑</button>
+        <button id="btnDance">💃 舞蹈</button>
+    </div>
+    <div class="tip">
+        🖱️ 鼠标拖拽旋转视角 | 右键平移 | 滚动缩放
+    </div>
+
+    <!-- 使用 importmap 管理 Three.js 依赖 -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.128.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.128.0/examples/jsm/",
+                "@pixiv/three-vrm": "/shuziren/three-vrm.module.js"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { VRM, VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
+
+        // ---------- 初始化场景（淡蓝色背景） ----------
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x87CEEB); // 淡蓝色
+        scene.fog = new THREE.FogExp2(0x87CEEB, 0.008);
+
+        // ---------- 相机 ----------
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(2, 1.6, 3.5);
+        camera.lookAt(0, 1.2, 0);
+
+        // ---------- 渲染器 ----------
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.setPixelRatio(window.devicePixelRatio);
+        document.body.appendChild(renderer.domElement);
+
+        // ---------- 轨道控制 ----------
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.rotateSpeed = 1.0;
+        controls.zoomSpeed = 1.2;
+        controls.panSpeed = 0.8;
+        controls.target.set(0, 1.2, 0);
+
+        // ---------- 灯光系统 ----------
+        const ambientLight = new THREE.AmbientLight(0x404060);
+        scene.add(ambientLight);
+        
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+        dirLight.position.set(3, 5, 2);
+        dirLight.castShadow = true;
+        dirLight.receiveShadow = true;
+        dirLight.shadow.mapSize.width = 1024;
+        dirLight.shadow.mapSize.height = 1024;
+        scene.add(dirLight);
+        
+        const backLight = new THREE.PointLight(0xffaa66, 0.5);
+        backLight.position.set(-1, 1.5, -2);
+        scene.add(backLight);
+        
+        const fillLight = new THREE.PointLight(0x6688ff, 0.4);
+        fillLight.position.set(1.5, 1, 1.8);
+        scene.add(fillLight);
+        
+        const groundLight = new THREE.PointLight(0x88aaff, 0.2);
+        groundLight.position.set(0, -0.5, 0);
+        scene.add(groundLight);
+        
+        // 地面网格（半透明）
+        const gridHelper = new THREE.GridHelper(8, 20, 0x88aaff, 0x335588);
+        gridHelper.position.y = -0.85;
+        gridHelper.material.transparent = true;
+        gridHelper.material.opacity = 0.25;
+        scene.add(gridHelper);
+        
+        // 阴影接收平面
+        const shadowPlane = new THREE.Mesh(
+            new THREE.PlaneGeometry(5, 5),
+            new THREE.ShadowMaterial({ opacity: 0.4, color: 0x000000, transparent: true, side: THREE.DoubleSide })
+        );
+        shadowPlane.rotation.x = -Math.PI / 2;
+        shadowPlane.position.y = -0.85;
+        shadowPlane.receiveShadow = true;
+        scene.add(shadowPlane);
+
+        // ---------- 加载 VRM 模型 ----------
+        const loader = new GLTFLoader();
+        loader.register((parser) => new VRMLoaderPlugin(parser));
+        
+        let mixer = null;
+        let currentAction = null;
+        let vrmModel = null;
+        let animationsList = [];
+
+        const modelPath = '/shuziren/xiaoxiaoxiaoxiao.vrm';
+        const infoBar = document.getElementById('infoBar');
+        const controlPanel = document.getElementById('controlPanel');
+        
+        loader.load(modelPath, 
+            (gltf) => {
+                console.log('VRM模型加载成功!');
+                const vrm = gltf.userData.vrm;
+                VRMUtils.rotateVRM0(vrm);
+                scene.add(vrm.scene);
+                vrmModel = vrm;
+                
+                vrm.scene.position.set(0, -0.85, 0);
+                vrm.scene.scale.set(1.0, 1.0, 1.0);
+                
+                vrm.scene.traverse((child) => {
+                    if (child.isMesh) {
+                        child.castShadow = true;
+                        child.receiveShadow = true;
+                    }
+                });
+                
+                // 获取动画列表
+                animationsList = gltf.animations || [];
+                
+                if (animationsList.length > 0) {
+                    mixer = new THREE.AnimationMixer(vrm.scene);
+                    
+                    // 设置按钮功能
+                    setupAnimationButtons(animationsList);
+                    
+                    infoBar.innerHTML = `🤖 数字人已上线 | 共 ${animationsList.length} 个动作`;
+                } else {
+                    infoBar.innerHTML = `🤖 VRM模型加载成功！`;
+                }
+                
+                // 3秒后隐藏信息栏
+                setTimeout(() => {
+                    infoBar.classList.add('hidden');
+                }, 3000);
+                
+                controlPanel.style.display = 'flex';
+            },
+            (xhr) => {
+                const percent = Math.floor((xhr.loaded / xhr.total) * 100);
+                infoBar.innerHTML = `⏳ 加载VRM数字人模型... ${percent}%`;
+            },
+            (error) => {
+                console.error('VRM模型加载失败:', error);
+                infoBar.innerHTML = `❌ VRM模型加载失败，请检查路径: ${modelPath}`;
+                controlPanel.style.display = 'flex';
+            }
+        );
+        
+        // 设置动画按钮
+        function setupAnimationButtons(animations) {
+            const btnIdle = document.getElementById('btnIdle');
+            const btnWave = document.getElementById('btnWave');
+            const btnRun = document.getElementById('btnRun');
+            const btnDance = document.getElementById('btnDance');
+            
+            // 辅助函数：根据关键词查找动画
+            function findClip(keywords) {
+                for (let kw of keywords) {
+                    const clip = animations.find(clip => clip.name.toLowerCase().includes(kw));
+                    if (clip) return clip;
+                }
+                return null;
+            }
+            
+            // 预设动画映射
+            const idleClip = findClip(['idle', 'stand', 'wait', '待机', 'neutral']);
+            const waveClip = findClip(['wave', 'hi', 'hello', '挥手', 'greet']);
+            const runClip = findClip(['run', 'walk', '奔跑', '走路', 'walking']);
+            const danceClip = findClip(['dance', '舞', 'dancing']);
+            
+            // 绑定按钮事件
+            if (idleClip) {
+                btnIdle.onclick = () => playAnimation(idleClip.name);
+                btnIdle.disabled = false;
+            } else {
+                btnIdle.disabled = true;
+                btnIdle.style.opacity = '0.5';
+                btnIdle.title = '未找到待机动画';
+            }
+            
+            if (waveClip) {
+                btnWave.onclick = () => playAnimation(waveClip.name);
+                btnWave.disabled = false;
+            } else {
+                btnWave.disabled = true;
+                btnWave.style.opacity = '0.5';
+                btnWave.title = '未找到挥手动画';
+            }
+            
+            if (runClip) {
+                btnRun.onclick = () => playAnimation(runClip.name);
+                btnRun.disabled = false;
+            } else {
+                btnRun.disabled = true;
+                btnRun.style.opacity = '0.5';
+                btnRun.title = '未找到奔跑动画';
+            }
+            
+            if (danceClip) {
+                btnDance.onclick = () => playAnimation(danceClip.name);
+                btnDance.disabled = false;
+            } else {
+                btnDance.disabled = true;
+                btnDance.style.opacity = '0.5';
+                btnDance.title = '未找到舞蹈动画';
+            }
+            
+            // 如果没有任何预设动画，显示可用动画列表
+            if (!idleClip && !waveClip && !runClip && !danceClip && animations.length > 0) {
+                infoBar.innerHTML = `⚠️ 未匹配到预设动作，请使用控制台播放动画`;
+                console.log('可用动画:', animations.map(a => a.name));
+            }
+        }
+        
+        // 播放动画
+        function playAnimation(animationName) {
+            if (!mixer || !vrmModel) {
+                console.warn('模型或动画混合器未准备好');
+                return;
+            }
+            
+            // 查找动画剪辑
+            const clip = THREE.AnimationClip.findByName(vrmModel.scene, animationName);
+            if (!clip) {
+                console.warn(`找不到动画: ${animationName}`);
+                return;
+            }
+            
+            // 如果已经在播放相同动画，不重复播放
+            if (currentAction && currentAction.getClip().name === animationName) return;
+            
+            // 淡出当前动画
+            if (currentAction) {
+                currentAction.fadeOut(0.2);
+            }
+            
+            // 播放新动画
+            const newAction = mixer.clipAction(clip);
+            newAction.reset();
+            newAction.fadeIn(0.2);
+            newAction.play();
+            
+            currentAction = newAction;
+            
+            // 更新信息栏临时显示
+            const infoBar = document.getElementById('infoBar');
+            infoBar.innerHTML = `🎬 播放动作: ${animationName}`;
+            infoBar.classList.remove('hidden');
+            setTimeout(() => {
+                if (infoBar && !infoBar.classList.contains('hidden')) {
+                    infoBar.classList.add('hidden');
+                }
+            }, 2000);
+        }
+        
+        // 暴露全局方法
+        window.playAnimation = playAnimation;
+        
+        // 环境粒子（淡蓝色背景下的白色粒子）
+        const starGeometry = new THREE.BufferGeometry();
+        const starCount = 600;
+        const starPositions = new Float32Array(starCount * 3);
+        for (let i = 0; i < starCount; i++) {
+            starPositions[i*3] = (Math.random() - 0.5) * 200;
+            starPositions[i*3+1] = (Math.random() - 0.5) * 50;
+            starPositions[i*3+2] = (Math.random() - 0.5) * 100 - 50;
+        }
+        starGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+        const starMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 0.06, transparent: true, opacity: 0.4 });
+        const stars = new THREE.Points(starGeometry, starMaterial);
+        scene.add(stars);
+        
+        function animateStars() {
+            stars.rotation.y += 0.0005;
+            stars.rotation.x += 0.0003;
+            requestAnimationFrame(animateStars);
+        }
+        animateStars();
+        
+        // 动画循环
+        const clock = new THREE.Clock();
+        
+        function animate() {
+            const delta = clock.getDelta();
+            const safeDelta = Math.min(delta, 0.033);
+            
+            if (mixer) {
+                mixer.update(safeDelta);
+            }
+            
+            if (vrmModel) {
+                vrmModel.update(safeDelta);
+            }
+            
+            controls.update();
+            renderer.render(scene, camera);
+            requestAnimationFrame(animate);
+        }
+        
+        animate();
+        
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+        
+        console.log('3D数字人页面已启动');
+    </script>
+    <script src="/frontend/rest_check.js"></script>
+    <script src="/frontend/distance_check.js"></script>
+</body>
+</html>
