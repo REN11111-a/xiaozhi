@@ -1,0 +1,13 @@
+# 在项目根目录创建 render.yaml
+services:
+  - type: web
+    name: xiaozhi-robot
+    runtime: python
+    repo: https://github.com/REN11111-a/xiaozhi
+    plan: free
+    region: oregon
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn backend.app:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10.0
